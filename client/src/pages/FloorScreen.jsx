@@ -1,3 +1,4 @@
+// 📁 FloorScreen.jsx
 import React, { useEffect, useState } from "react";
 import { useRecoilState, useRecoilValue } from "recoil";
 
@@ -8,6 +9,7 @@ import { battleState } from "../recoil/atoms/battle";
 import { rewardState } from "../recoil/atoms/reward";
 import { activePokemonIndexState } from "../recoil/atoms/active";
 import { highlightedStatState } from "../recoil/atoms/highlight";
+import { battleLogState } from "../recoil/atoms/battleLog";
 
 import { generateEnemyTeam } from "../utils/generateEnemyTeam";
 
@@ -23,8 +25,10 @@ export default function FloorScreen() {
   const [activeIndex, setActiveIndex] = useRecoilState(activePokemonIndexState);
   const reward = useRecoilValue(rewardState);
   const highlight = useRecoilValue(highlightedStatState);
+  const [battleLog, setBattleLog] = useRecoilState(battleLogState);
 
   const [isSwitching, setIsSwitching] = useState(false);
+  const [isBattleInProgress, setIsBattleInProgress] = useState(false);
 
   useEffect(() => {
     const setupEnemy = async () => {
@@ -34,109 +38,107 @@ export default function FloorScreen() {
     setupEnemy();
   }, [floor]);
 
-  const simulateBattle = () => {
+  const runTurnBasedBattle = async () => {
     const player = team[activeIndex];
     const enemy = enemyTeam[0];
+
+    if (!player || !player.stats || !enemy || !enemy.stats) {
+      console.warn("Invalid battle data.");
+      return;
+    }
 
     let playerHP = player.stats.hp;
     let enemyHP = enemy.stats.hp;
+    const order =
+      player.stats.speed >= enemy.stats.speed
+        ? ["player", "enemy"]
+        : ["enemy", "player"];
 
-    const playerSpeed = player.stats.speed;
-    const enemySpeed = enemy.stats.speed;
-    if (!player || !player.stats) {
-      console.warn("Invalid active Pokémon");
-      return;
-    }
-    const turnOrder =
-      playerSpeed >= enemySpeed ? ["player", "enemy"] : ["enemy", "player"];
+    setIsBattleInProgress(true);
+    setBattleLog([]);
 
     while (playerHP > 0 && enemyHP > 0) {
-      for (const turn of turnOrder) {
+      for (const turn of order) {
+        await new Promise((resolve) => setTimeout(resolve, 700)); // délai visuel
+
         const dmg = Math.floor(Math.random() * 10) + 5;
+
         if (turn === "player") {
           enemyHP -= dmg;
-          if (enemyHP <= 0) break;
+          setBattleLog((log) => [
+            ...log,
+            `⚡ ${player.name} used Tackle! 💥 -${dmg} HP`,
+          ]);
+
+          const updatedEnemy = {
+            ...enemy,
+            stats: {
+              ...enemy.stats,
+              hp: Math.max(enemyHP, 0),
+            },
+          };
+          setEnemyTeam([updatedEnemy]);
         } else {
           playerHP -= dmg;
-          if (playerHP <= 0) break;
+          setBattleLog((log) => [
+            ...log,
+            `💢 ${enemy.name} attacks! -${dmg} HP`,
+          ]);
+
+          const updatedTeam = [...team];
+          updatedTeam[activeIndex] = {
+            ...updatedTeam[activeIndex],
+            stats: {
+              ...updatedTeam[activeIndex].stats,
+              hp: Math.max(playerHP, 0),
+            },
+          };
+          setTeam(updatedTeam);
         }
+
+        await new Promise((resolve) => setTimeout(resolve, 300)); // pour que l'UI ait le temps de flusher
+
+        if (enemyHP <= 0 || playerHP <= 0) break;
       }
     }
-
-    if (playerHP > 0) {
-      const updatedTeam = [...team];
-      const updatedMon = {
-        ...updatedTeam[activeIndex],
-        stats: {
-          ...updatedTeam[activeIndex].stats,
-          hp: playerHP,
-        },
-      };
-      updatedTeam[activeIndex] = updatedMon;
-      setTeam(updatedTeam);
-      setBattle({ playerHP, enemyHP, result: "win" });
-    } else {
-      // Active Pokémon is KO, try to auto-switch
-      const updatedTeam = [...team];
-      updatedTeam[activeIndex] = {
-        ...updatedTeam[activeIndex],
-        stats: {
-          ...updatedTeam[activeIndex].stats,
-          hp: 0,
-        },
-      };
-      setTeam(updatedTeam);
-
-      const updatedEnemy = {
-        ...enemy,
-        stats: {
-          ...enemy.stats,
-          hp: Math.max(enemyHP, 0),
-        },
-      };
-      setEnemyTeam([updatedEnemy]);
-
-      // Find next available Pokémon with HP > 0
-      const nextAlive = updatedTeam.findIndex((mon) => mon.stats.hp > 0);
-
-      if (nextAlive !== -1) {
-        setActiveIndex(nextAlive);
-        setBattle({ playerHP: 0, enemyHP, result: null }); // Reset battle result (can re-attack)
-      } else {
-        setBattle({ playerHP: 0, enemyHP, result: "lose" });
-      }
-    }
-  };
-
-  // Optional: Enemy free attack after switch
-  const simulateEnemyTurn = () => {
-    const player = team[activeIndex];
-    const enemy = enemyTeam[0];
-    let playerHP = player.stats.hp;
-
-    const dmg = Math.floor(Math.random() * 10) + 5;
-    playerHP -= dmg;
 
     const updatedTeam = [...team];
     updatedTeam[activeIndex] = {
-      ...player,
+      ...updatedTeam[activeIndex],
       stats: {
-        ...player.stats,
+        ...updatedTeam[activeIndex].stats,
         hp: Math.max(playerHP, 0),
       },
     };
     setTeam(updatedTeam);
 
+    const updatedEnemy = {
+      ...enemy,
+      stats: {
+        ...enemy.stats,
+        hp: Math.max(enemyHP, 0),
+      },
+    };
+    setEnemyTeam([updatedEnemy]);
+
     if (playerHP <= 0) {
-      setBattle({ ...battle, result: "lose" });
+      const nextAlive = updatedTeam.findIndex((mon) => mon.stats.hp > 0);
+      if (nextAlive !== -1) {
+        setActiveIndex(nextAlive);
+        setBattle({ playerHP: 0, enemyHP, result: null });
+      } else {
+        setBattle({ playerHP: 0, enemyHP, result: "lose" });
+      }
+    } else {
+      setBattle({ playerHP, enemyHP, result: "win" });
     }
+
+    setIsBattleInProgress(false);
   };
 
   const handleSwitch = (index) => {
     setActiveIndex(index);
     setIsSwitching(false);
-
-    // simulateEnemyTurn(); // <- Uncomment to apply "turn lost on switch"
   };
 
   return (
@@ -186,8 +188,13 @@ export default function FloorScreen() {
 
       {!battle.result && !isSwitching && (
         <div className="action-buttons">
-          <button onClick={simulateBattle}>⚔️ Attack</button>
-          <button onClick={() => setIsSwitching(true)}>
+          <button onClick={runTurnBasedBattle} disabled={isBattleInProgress}>
+            ⚔️ Attack
+          </button>
+          <button
+            onClick={() => setIsSwitching(true)}
+            disabled={isBattleInProgress}
+          >
             🔄 Switch Pokémon
           </button>
         </div>
@@ -212,6 +219,13 @@ export default function FloorScreen() {
 
       {battle.result === "win" && !reward && <RewardScreen />}
       {battle.result === "lose" && <GameOverScreen />}
+
+      <div className="battle-log">
+        <h3>📜 Battle Log</h3>
+        {battleLog.slice(-5).map((msg, i) => (
+          <p key={i}>{msg}</p>
+        ))}
+      </div>
     </div>
   );
 }
