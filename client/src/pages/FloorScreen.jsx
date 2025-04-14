@@ -1,19 +1,38 @@
 import React, { useEffect } from "react";
 import { useRecoilState, useRecoilValue } from "recoil";
+
 import { teamState } from "../recoil/atoms/team";
 import { floorState } from "../recoil/atoms/floor";
 import { enemyTeamState } from "../recoil/atoms/enemy";
-import { generateEnemyTeam } from "../utils/generateEnemyTeam";
 import { battleState } from "../recoil/atoms/battle";
+import { rewardState } from "../recoil/atoms/reward";
+import { activePokemonIndexState } from "../recoil/atoms/active";
+import { highlightedStatState } from "../recoil/atoms/highlight";
+
+import { generateEnemyTeam } from "../utils/generateEnemyTeam";
+
+import RewardScreen from "../components/RewardScreen";
+import GameOverScreen from "../components/GameOverScreen";
 
 export default function FloorScreen() {
-  const team = useRecoilValue(teamState);
+  const [team, setTeam] = useRecoilState(teamState);
+  const [floor, setFloor] = useRecoilState(floorState);
   const [enemyTeam, setEnemyTeam] = useRecoilState(enemyTeamState);
-  const [floor] = useRecoilState(floorState);
   const [battle, setBattle] = useRecoilState(battleState);
+  const [activeIndex, setActiveIndex] = useRecoilState(activePokemonIndexState);
+  const highlight = useRecoilValue(highlightedStatState);
+  const reward = useRecoilValue(rewardState);
+
+  useEffect(() => {
+    const setupEnemy = async () => {
+      const enemies = await generateEnemyTeam(1);
+      setEnemyTeam(enemies);
+    };
+    setupEnemy();
+  }, [floor]);
 
   const simulateBattle = () => {
-    const player = team[0];
+    const player = team[activeIndex];
     const enemy = enemyTeam[0];
 
     let playerHP = player.stats.hp;
@@ -38,32 +57,68 @@ export default function FloorScreen() {
       }
     }
 
+    // Update team with new HP
     if (playerHP > 0) {
+      const updatedTeam = [...team];
+      const updatedMon = {
+        ...updatedTeam[activeIndex],
+        stats: {
+          ...updatedTeam[activeIndex].stats,
+          hp: playerHP,
+        },
+      };
+      updatedTeam[activeIndex] = updatedMon;
+      setTeam(updatedTeam);
       setBattle({ playerHP, enemyHP, result: "win" });
     } else {
       setBattle({ playerHP, enemyHP, result: "lose" });
     }
   };
 
-  useEffect(() => {
-    const setupEnemy = async () => {
-      const enemies = await generateEnemyTeam(1); // scale later with floor
-      setEnemyTeam(enemies);
-    };
-    setupEnemy();
-  }, [floor]);
-
   return (
     <div className="floor-screen">
       <h2>🏯 Floor {floor}</h2>
 
+      <h4>Choose your fighter:</h4>
+      <select
+        onChange={(e) => setActiveIndex(parseInt(e.target.value))}
+        value={activeIndex}
+      >
+        {team.map((poke, i) => (
+          <option key={poke.id} value={i}>
+            {poke.name.toUpperCase()} (HP: {poke.stats.hp})
+          </option>
+        ))}
+      </select>
+
       <div className="team-section">
         <h3>Your Team</h3>
-        {team.map((poke) => (
+        {team.map((poke, i) => (
           <div key={poke.id} className="pokemon-card">
             <img src={poke.sprite} alt={poke.name} />
             <h4>{poke.name}</h4>
-            <p>HP: {poke.stats.hp}</p>
+            <p
+              className={
+                highlight?.index === i && highlight?.stat === "hp"
+                  ? "highlight"
+                  : ""
+              }
+            >
+              HP: {poke.stats.hp}
+            </p>
+            <p
+              className={
+                highlight?.index === i && highlight?.stat === "attack"
+                  ? "highlight"
+                  : ""
+              }
+            >
+              ATK: {poke.stats.attack}
+            </p>
+            <p>DEF: {poke.stats.defense}</p>
+            <p>SPD: {poke.stats.speed}</p>
+            <p>SPA: {poke.stats.special_attack}</p>
+            <p>SPD: {poke.stats.special_defense}</p>
           </div>
         ))}
       </div>
@@ -74,21 +129,22 @@ export default function FloorScreen() {
           <div key={poke.id} className="pokemon-card enemy">
             <img src={poke.sprite} alt={poke.name} />
             <h4>{poke.name}</h4>
-            <span>HP: {poke.stats.hp}</span>
+            <p>HP: {poke.stats.hp}</p>
+            <p>ATK: {poke.stats.attack}</p>
+            <p>DEF: {poke.stats.defense}</p>
+            <p>SPD: {poke.stats.speed}</p>
+            <p>SPA: {poke.stats.special_attack}</p>
+            <p>SPD: {poke.stats.special_defense}</p>
           </div>
         ))}
       </div>
 
-      <button onClick={simulateBattle}>Start Battle</button>
-      {battle.result && (
-        <div className="battle-result">
-          {battle.result === "win" ? (
-            <p>✅ You won the battle! Proceed to next floor.</p>
-          ) : (
-            <p>❌ You lost! Game over.</p>
-          )}
-        </div>
+      {!battle.result && (
+        <button onClick={simulateBattle}>⚔️ Start Battle</button>
       )}
+
+      {battle.result === "win" && !reward && <RewardScreen />}
+      {battle.result === "lose" && <GameOverScreen />}
     </div>
   );
 }

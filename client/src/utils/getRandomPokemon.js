@@ -5,14 +5,22 @@ export const getRandomPokemon = async () => {
 
   const res = await axios.get(`https://pokeapi.co/api/v2/pokemon/${randomId}`);
   const pokemon = res.data;
+  const rawStats = pokemon.stats.reduce((acc, stat) => {
+    acc[stat.stat.name] = stat.base_stat;
+    return acc;
+  }, {});
   return {
     id: pokemon.id,
     name: pokemon.name,
     sprite: pokemon.sprites.front_default,
-    stats: pokemon.stats.reduce((acc, stat) => {
-      acc[stat.stat.name] = stat.base_stat;
-      return acc;
-    }, {}),
+    stats: {
+      hp: rawStats["hp"],
+      attack: rawStats["attack"],
+      defense: rawStats["defense"],
+      special_attack: rawStats["special-attack"],
+      special_defense: rawStats["special-defense"],
+      speed: rawStats["speed"],
+    },
     moves: pokemon.moves.slice(0, 4).map((m) => m.move.name),
   };
 };
