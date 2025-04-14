@@ -10,7 +10,7 @@ import { rewardState } from "../recoil/atoms/reward";
 import { activePokemonIndexState } from "../recoil/atoms/active";
 import { highlightedStatState } from "../recoil/atoms/highlight";
 import { battleLogState } from "../recoil/atoms/battleLog";
-
+import { getTypeEffectiveness } from "../utils/typeChart";
 import { generateEnemyTeam } from "../utils/generateEnemyTeam";
 
 import RewardScreen from "../components/RewardScreen";
@@ -55,33 +55,52 @@ export default function FloorScreen() {
         : ["enemy", "player"];
 
     setIsBattleInProgress(true);
-    setBattleLog([]);
+    setBattleLog([]); // Reset battle log at the start
 
     const calculateDamage = (attacker, defender) => {
       const attack = attacker.stats.attack;
       const defense = defender.stats.defense;
 
-      const base = Math.floor(attack * (Math.random() * 0.5 + 0.75)); // entre 75% et 125% de ATK
-      const reduced = Math.floor(defense * 0.5); // DEF réduit à 50%
+      const base = Math.floor(attack * (Math.random() * 0.5 + 0.75));
+      const reduced = Math.floor(defense * 0.5);
+      const baseDamage = Math.max(base - reduced, 1);
 
-      return Math.max(base - reduced, 1); // dégâts minimum : 1
+      const attackerType = attacker.types?.[0];
+      const defenderTypes = defender.types || [];
+
+      const typeMultiplier = getTypeEffectiveness(attackerType, defenderTypes);
+      const finalDamage = Math.floor(baseDamage * typeMultiplier);
+
+      return { finalDamage, typeMultiplier };
     };
+
     while (playerHP > 0 && enemyHP > 0) {
       for (const turn of order) {
         await new Promise((resolve) => setTimeout(resolve, 700)); // délai visuel
 
-        const dmg =
+        const { finalDamage, typeMultiplier } =
           turn === "player"
             ? calculateDamage(player, enemy)
             : calculateDamage(enemy, player);
 
-        if (turn === "player") {
-          enemyHP -= dmg;
-          setBattleLog((log) => [
-            ...log,
-            `⚡ ${player.name} used Tackle! 💥 -${dmg} HP`,
-          ]);
+        let logMessage = "";
 
+        if (turn === "player") {
+          enemyHP -= finalDamage;
+          logMessage = `⚡ ${player.name} used Tackle! 💥 -${finalDamage} HP`;
+          if (typeMultiplier > 1) logMessage += " (Super effective!)";
+          else if (typeMultiplier < 1) logMessage += " (Not very effective...)";
+        } else {
+          playerHP -= finalDamage;
+          logMessage = `💢 ${enemy.name} attacks! -${finalDamage} HP`;
+          if (typeMultiplier > 1) logMessage += " (Super effective!)";
+          else if (typeMultiplier < 1) logMessage += " (Not very effective...)";
+        }
+
+        setBattleLog((log) => [...log, logMessage]);
+
+        // Update HP
+        if (turn === "player") {
           const updatedEnemy = {
             ...enemy,
             stats: {
@@ -91,12 +110,6 @@ export default function FloorScreen() {
           };
           setEnemyTeam([updatedEnemy]);
         } else {
-          playerHP -= dmg;
-          setBattleLog((log) => [
-            ...log,
-            `💢 ${enemy.name} attacks! -${dmg} HP`,
-          ]);
-
           const updatedTeam = [...team];
           updatedTeam[activeIndex] = {
             ...updatedTeam[activeIndex],

@@ -23,5 +23,6 @@ export const getRandomPokemon = async () => {
       speed: rawStats["speed"],
     },
     moves: pokemon.moves.slice(0, 4).map((m) => m.move.name),
+    types: pokemon.types.map((t) => t.type.name),
   };
 };
