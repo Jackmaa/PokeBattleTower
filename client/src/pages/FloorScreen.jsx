@@ -57,11 +57,23 @@ export default function FloorScreen() {
     setIsBattleInProgress(true);
     setBattleLog([]);
 
+    const calculateDamage = (attacker, defender) => {
+      const attack = attacker.stats.attack;
+      const defense = defender.stats.defense;
+
+      const base = Math.floor(attack * (Math.random() * 0.5 + 0.75)); // entre 75% et 125% de ATK
+      const reduced = Math.floor(defense * 0.5); // DEF réduit à 50%
+
+      return Math.max(base - reduced, 1); // dégâts minimum : 1
+    };
     while (playerHP > 0 && enemyHP > 0) {
       for (const turn of order) {
         await new Promise((resolve) => setTimeout(resolve, 700)); // délai visuel
 
-        const dmg = Math.floor(Math.random() * 10) + 5;
+        const dmg =
+          turn === "player"
+            ? calculateDamage(player, enemy)
+            : calculateDamage(enemy, player);
 
         if (turn === "player") {
           enemyHP -= dmg;
