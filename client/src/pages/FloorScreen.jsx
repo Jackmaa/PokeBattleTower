@@ -13,6 +13,7 @@ import { generateEnemyTeam } from "../utils/generateEnemyTeam";
 
 import RewardScreen from "../components/RewardScreen";
 import GameOverScreen from "../components/GameOverScreen";
+import HealthBar from "../components/HealthBar";
 
 export default function FloorScreen() {
   const [team, setTeam] = useRecoilState(teamState);
@@ -91,21 +92,13 @@ export default function FloorScreen() {
         ))}
       </select>
 
-      <div className="team-section">
+      <div className="team-section" style={{ display: "flex" }}>
         <h3>Your Team</h3>
         {team.map((poke, i) => (
           <div key={poke.id} className="pokemon-card">
             <img src={poke.sprite} alt={poke.name} />
             <h4>{poke.name}</h4>
-            <p
-              className={
-                highlight?.index === i && highlight?.stat === "hp"
-                  ? "highlight"
-                  : ""
-              }
-            >
-              HP: {poke.stats.hp}
-            </p>
+            <HealthBar current={poke.stats.hp} max={poke.stats.hp_max ?? 100} />
             <p
               className={
                 highlight?.index === i && highlight?.stat === "attack"
@@ -123,13 +116,13 @@ export default function FloorScreen() {
         ))}
       </div>
 
-      <div className="team-section">
+      <div className="team-section" style={{ display: "flex" }}>
         <h3>Enemy Team</h3>
         {enemyTeam.map((poke) => (
           <div key={poke.id} className="pokemon-card enemy">
             <img src={poke.sprite} alt={poke.name} />
             <h4>{poke.name}</h4>
-            <p>HP: {poke.stats.hp}</p>
+            <HealthBar current={poke.stats.hp} max={poke.stats.hp_max ?? 100} />
             <p>ATK: {poke.stats.attack}</p>
             <p>DEF: {poke.stats.defense}</p>
             <p>SPD: {poke.stats.speed}</p>

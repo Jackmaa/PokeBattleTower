@@ -15,6 +15,7 @@ export const getRandomPokemon = async () => {
     sprite: pokemon.sprites.front_default,
     stats: {
       hp: rawStats["hp"],
+      hp_max: rawStats["hp"],
       attack: rawStats["attack"],
       defense: rawStats["defense"],
       special_attack: rawStats["special-attack"],
