@@ -1,0 +1,53 @@
+# 📦 Node dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 🚀 Build artifacts
+dist/
+build/
+
+# 🧪 Test coverage
+coverage/
+
+# ⚙️ Environment variables
+.env
+.env.local
+.env.*.local
+
+# 💻 Editor settings
+.vscode/
+.idea/
+*.swp
+
+# 🔥 OS-specific
+.DS_Store
+Thumbs.db
+
+# 🧼 Logs
+logs/
+*.log
+
+# ⚙️ Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# 📦 Specific to your structure
+client/node_modules/
+client/dist/
+server/node_modules/
+
+# 💅 Misc
+*.tgz
+.cache/
+.next/
+out/
+
+# 📸 Generated previews or screenshots
+*.png
+*.jpg
+*.jpeg
+*.gif
