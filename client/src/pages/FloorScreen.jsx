@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useRecoilState, useRecoilValue } from "recoil";
 
 import { teamState } from "../recoil/atoms/team";
@@ -21,8 +21,10 @@ export default function FloorScreen() {
   const [enemyTeam, setEnemyTeam] = useRecoilState(enemyTeamState);
   const [battle, setBattle] = useRecoilState(battleState);
   const [activeIndex, setActiveIndex] = useRecoilState(activePokemonIndexState);
-  const highlight = useRecoilValue(highlightedStatState);
   const reward = useRecoilValue(rewardState);
+  const highlight = useRecoilValue(highlightedStatState);
+
+  const [isSwitching, setIsSwitching] = useState(false);
 
   useEffect(() => {
     const setupEnemy = async () => {
@@ -41,7 +43,10 @@ export default function FloorScreen() {
 
     const playerSpeed = player.stats.speed;
     const enemySpeed = enemy.stats.speed;
-
+    if (!player || !player.stats) {
+      console.warn("Invalid active Pokémon");
+      return;
+    }
     const turnOrder =
       playerSpeed >= enemySpeed ? ["player", "enemy"] : ["enemy", "player"];
 
@@ -58,7 +63,6 @@ export default function FloorScreen() {
       }
     }
 
-    // Update team with new HP
     if (playerHP > 0) {
       const updatedTeam = [...team];
       const updatedMon = {
@@ -72,27 +76,74 @@ export default function FloorScreen() {
       setTeam(updatedTeam);
       setBattle({ playerHP, enemyHP, result: "win" });
     } else {
-      setBattle({ playerHP, enemyHP, result: "lose" });
+      // Active Pokémon is KO, try to auto-switch
+      const updatedTeam = [...team];
+      updatedTeam[activeIndex] = {
+        ...updatedTeam[activeIndex],
+        stats: {
+          ...updatedTeam[activeIndex].stats,
+          hp: 0,
+        },
+      };
+      setTeam(updatedTeam);
+
+      const updatedEnemy = {
+        ...enemy,
+        stats: {
+          ...enemy.stats,
+          hp: Math.max(enemyHP, 0),
+        },
+      };
+      setEnemyTeam([updatedEnemy]);
+
+      // Find next available Pokémon with HP > 0
+      const nextAlive = updatedTeam.findIndex((mon) => mon.stats.hp > 0);
+
+      if (nextAlive !== -1) {
+        setActiveIndex(nextAlive);
+        setBattle({ playerHP: 0, enemyHP, result: null }); // Reset battle result (can re-attack)
+      } else {
+        setBattle({ playerHP: 0, enemyHP, result: "lose" });
+      }
     }
+  };
+
+  // Optional: Enemy free attack after switch
+  const simulateEnemyTurn = () => {
+    const player = team[activeIndex];
+    const enemy = enemyTeam[0];
+    let playerHP = player.stats.hp;
+
+    const dmg = Math.floor(Math.random() * 10) + 5;
+    playerHP -= dmg;
+
+    const updatedTeam = [...team];
+    updatedTeam[activeIndex] = {
+      ...player,
+      stats: {
+        ...player.stats,
+        hp: Math.max(playerHP, 0),
+      },
+    };
+    setTeam(updatedTeam);
+
+    if (playerHP <= 0) {
+      setBattle({ ...battle, result: "lose" });
+    }
+  };
+
+  const handleSwitch = (index) => {
+    setActiveIndex(index);
+    setIsSwitching(false);
+
+    // simulateEnemyTurn(); // <- Uncomment to apply "turn lost on switch"
   };
 
   return (
     <div className="floor-screen">
       <h2>🏯 Floor {floor}</h2>
 
-      <h4>Choose your fighter:</h4>
-      <select
-        onChange={(e) => setActiveIndex(parseInt(e.target.value))}
-        value={activeIndex}
-      >
-        {team.map((poke, i) => (
-          <option key={poke.id} value={i}>
-            {poke.name.toUpperCase()} (HP: {poke.stats.hp})
-          </option>
-        ))}
-      </select>
-
-      <div className="team-section" style={{ display: "flex" }}>
+      <div className="team-section">
         <h3>Your Team</h3>
         {team.map((poke, i) => (
           <div key={poke.id} className="pokemon-card">
@@ -112,11 +163,12 @@ export default function FloorScreen() {
             <p>SPD: {poke.stats.speed}</p>
             <p>SPA: {poke.stats.special_attack}</p>
             <p>SPD: {poke.stats.special_defense}</p>
+            {i === activeIndex && <strong>🟢 Active</strong>}
           </div>
         ))}
       </div>
 
-      <div className="team-section" style={{ display: "flex" }}>
+      <div className="team-section">
         <h3>Enemy Team</h3>
         {enemyTeam.map((poke) => (
           <div key={poke.id} className="pokemon-card enemy">
@@ -132,8 +184,30 @@ export default function FloorScreen() {
         ))}
       </div>
 
-      {!battle.result && (
-        <button onClick={simulateBattle}>⚔️ Start Battle</button>
+      {!battle.result && !isSwitching && (
+        <div className="action-buttons">
+          <button onClick={simulateBattle}>⚔️ Attack</button>
+          <button onClick={() => setIsSwitching(true)}>
+            🔄 Switch Pokémon
+          </button>
+        </div>
+      )}
+
+      {isSwitching && (
+        <div className="switch-menu">
+          <h4>Choose a new active Pokémon:</h4>
+          <div className="switch-options">
+            {team.map((poke, i) => (
+              <button
+                key={poke.id}
+                disabled={poke.stats.hp <= 0 || i === activeIndex}
+                onClick={() => handleSwitch(i)}
+              >
+                {poke.name.toUpperCase()} (HP: {poke.stats.hp})
+              </button>
+            ))}
+          </div>
+        </div>
       )}
 
       {battle.result === "win" && !reward && <RewardScreen />}

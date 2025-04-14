@@ -4,18 +4,21 @@ import { teamState } from "../recoil/atoms/team";
 import { floorState } from "../recoil/atoms/floor";
 import { battleState } from "../recoil/atoms/battle";
 import { gameStartedState } from "../recoil/atoms/game";
+import { activePokemonIndexState } from "../recoil/atoms/active";
 
 export default function GameOverScreen() {
   const resetTeam = useResetRecoilState(teamState);
   const resetFloor = useResetRecoilState(floorState);
   const resetBattle = useResetRecoilState(battleState);
   const resetGame = useResetRecoilState(gameStartedState);
+  const resetActiveIndex = useResetRecoilState(activePokemonIndexState);
 
   const restart = () => {
     resetTeam();
     resetFloor();
     resetBattle();
     resetGame();
+    resetActiveIndex();
   };
 
   return (

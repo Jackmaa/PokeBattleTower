@@ -2,10 +2,12 @@ import React, { useEffect, useState } from "react";
 import { useSetRecoilState } from "recoil";
 import { teamState } from "../recoil/atoms/team";
 import { getRandomPokemon } from "../utils/getRandomPokemon";
+import { activePokemonIndexState } from "../recoil/atoms/active";
 
 export default function StarterScreen({ onStart }) {
   const setTeam = useSetRecoilState(teamState);
   const [options, setOptions] = useState([]);
+  const setActiveIndex = useSetRecoilState(activePokemonIndexState);
 
   useEffect(() => {
     const loadStarters = async () => {
@@ -20,6 +22,7 @@ export default function StarterScreen({ onStart }) {
   }, []);
   const selectStarter = (pokemon) => {
     setTeam([pokemon]);
+    setActiveIndex(0);
     onStart();
   };
 

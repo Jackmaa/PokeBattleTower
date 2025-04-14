@@ -12,3 +12,7 @@
     text-shadow: 0 0 15px #0ff;
   }
 }
+
+.team-section {
+  display: flex;
+}
