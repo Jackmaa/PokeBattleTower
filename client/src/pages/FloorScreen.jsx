@@ -198,23 +198,6 @@ export default function FloorScreen() {
         ))}
       </div>
 
-      {isSwitching && (
-        <div className="switch-menu">
-          <h4>Choose a new active Pokémon:</h4>
-          <div className="switch-options">
-            {team.map((poke, i) => (
-              <button
-                key={poke.id}
-                disabled={poke.stats.hp <= 0 || i === activeIndex}
-                onClick={() => handleSwitch(i)}
-              >
-                {poke.name.toUpperCase()} (HP: {poke.stats.hp})
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
       {battle.result === "win" && !reward && <RewardScreen />}
       {battle.result === "lose" && <GameOverScreen />}
 
