@@ -5,7 +5,7 @@ function PokemonCard({ poke, highlight, activeIndex, onSwitch }) {
     <div className={`pokemon-card ${poke.isEnemy ? "enemy" : ""}`}>
       <img src={poke.sprite} alt={poke.name} />
       <h4>{poke.name}</h4>
-      <HealthBar current={poke.stats.hp} max={poke.stats.hp_max ?? 100} />
+      <HealthBar current={poke.stats.hp} max={poke.stats.hp_max} />
       <p
         className={
           highlight?.index === poke.id && highlight?.stat === "attack"

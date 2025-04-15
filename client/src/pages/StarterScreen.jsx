@@ -3,10 +3,12 @@ import { useSetRecoilState } from "recoil";
 import { teamState } from "../recoil/atoms/team";
 import { getRandomPokemon } from "../utils/getRandomPokemon";
 import { activePokemonIndexState } from "../recoil/atoms/active";
+import PokemonCard from "../components/PokemonCard";
 
 export default function StarterScreen({ onStart }) {
   const setTeam = useSetRecoilState(teamState);
   const [options, setOptions] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const setActiveIndex = useSetRecoilState(activePokemonIndexState);
 
   useEffect(() => {
@@ -17,29 +19,31 @@ export default function StarterScreen({ onStart }) {
         getRandomPokemon(),
       ]);
       setOptions(starters);
+      setIsLoading(false); // Set loading to false when data is ready
     };
     loadStarters();
   }, []);
+
   const selectStarter = (pokemon) => {
     setTeam([pokemon]);
     setActiveIndex(0);
     onStart();
   };
 
+  if (isLoading) {
+    return <div>Loading Starters...</div>; // Show loading state while fetching data
+  }
+
   return (
     <div className="starter-screen">
       <h2>Choose your Starter Pokemon</h2>
       <div className="starter-options">
         {options.map((poke) => (
-          <div
+          <PokemonCard
             key={poke.id}
-            className="pokemon-card"
-            onClick={() => selectStarter(poke)}
-          >
-            <img src={poke.sprite} alt={poke.name} />
-            <h3>{poke.name.toUpperCase()}</h3>
-            <span>HP: {poke.stats.hp}</span>
-          </div>
+            poke={poke}
+            onSwitch={() => selectStarter(poke)}
+          />
         ))}
       </div>
     </div>
