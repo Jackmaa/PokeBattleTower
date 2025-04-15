@@ -1,4 +1,4 @@
-import React, { useState } from "react"; // or from 'react' without React 17
+import React, { useState } from "react";
 import StarterScreen from "./pages/StarterScreen";
 import FloorScreen from "./pages/FloorScreen";
 import { useRecoilState } from "recoil";

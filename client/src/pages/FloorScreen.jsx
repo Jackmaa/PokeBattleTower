@@ -13,9 +13,10 @@ import { battleLogState } from "../recoil/atoms/battleLog";
 import { getTypeEffectiveness } from "../utils/typeChart";
 import { generateEnemyTeam } from "../utils/generateEnemyTeam";
 
+import PokemonCard from "../components/PokemonCard";
+
 import RewardScreen from "../components/RewardScreen";
 import GameOverScreen from "../components/GameOverScreen";
-import HealthBar from "../components/HealthBar";
 
 export default function FloorScreen() {
   const [team, setTeam] = useRecoilState(teamState);
@@ -173,57 +174,29 @@ export default function FloorScreen() {
       <div className="team-section">
         <h3>Your Team</h3>
         {team.map((poke, i) => (
-          <div key={poke.id} className="pokemon-card">
-            <img src={poke.sprite} alt={poke.name} />
-            <h4>{poke.name}</h4>
-            <HealthBar current={poke.stats.hp} max={poke.stats.hp_max ?? 100} />
-            <p
-              className={
-                highlight?.index === i && highlight?.stat === "attack"
-                  ? "highlight"
-                  : ""
-              }
-            >
-              ATK: {poke.stats.attack}
-            </p>
-            <p>DEF: {poke.stats.defense}</p>
-            <p>SPD: {poke.stats.speed}</p>
-            <p>SPA: {poke.stats.special_attack}</p>
-            <p>SPD: {poke.stats.special_defense}</p>
-            {i === activeIndex && <strong>🟢 Active</strong>}
-          </div>
+          <PokemonCard
+            key={poke.id}
+            poke={{ ...poke, isActive: i === activeIndex }}
+            highlight={highlight}
+            activeIndex={activeIndex}
+            onSwitch={setIsSwitching ? () => handleSwitch(i) : null}
+          />
         ))}
       </div>
-
-      <div className="team-section">
-        <h3>Enemy Team</h3>
-        {enemyTeam.map((poke) => (
-          <div key={poke.id} className="pokemon-card enemy">
-            <img src={poke.sprite} alt={poke.name} />
-            <h4>{poke.name}</h4>
-            <HealthBar current={poke.stats.hp} max={poke.stats.hp_max ?? 100} />
-            <p>ATK: {poke.stats.attack}</p>
-            <p>DEF: {poke.stats.defense}</p>
-            <p>SPD: {poke.stats.speed}</p>
-            <p>SPA: {poke.stats.special_attack}</p>
-            <p>SPD: {poke.stats.special_defense}</p>
-          </div>
-        ))}
-      </div>
-
       {!battle.result && !isSwitching && (
         <div className="action-buttons">
           <button onClick={runTurnBasedBattle} disabled={isBattleInProgress}>
             ⚔️ Attack
           </button>
-          <button
-            onClick={() => setIsSwitching(true)}
-            disabled={isBattleInProgress}
-          >
-            🔄 Switch Pokémon
-          </button>
         </div>
       )}
+
+      <div className="team-section">
+        <h3>Enemy Team</h3>
+        {enemyTeam.map((poke) => (
+          <PokemonCard key={poke.id} poke={{ ...poke, isEnemy: true }} />
+        ))}
+      </div>
 
       {isSwitching && (
         <div className="switch-menu">
