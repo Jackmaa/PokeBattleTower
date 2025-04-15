@@ -43,6 +43,7 @@ export default function StarterScreen({ onStart }) {
             key={poke.id}
             poke={poke}
             onSwitch={() => selectStarter(poke)}
+            mode="starter"
           />
         ))}
       </div>

@@ -15,6 +15,7 @@ import { generateEnemyTeam } from "../utils/generateEnemyTeam";
 
 import PokemonCard from "../components/PokemonCard";
 
+import { getRandomPokemon } from "../utils/getRandomPokemon";
 import RewardScreen from "../components/RewardScreen";
 import GameOverScreen from "../components/GameOverScreen";
 
@@ -24,10 +25,10 @@ export default function FloorScreen() {
   const [enemyTeam, setEnemyTeam] = useRecoilState(enemyTeamState);
   const [battle, setBattle] = useRecoilState(battleState);
   const [activeIndex, setActiveIndex] = useRecoilState(activePokemonIndexState);
-  const reward = useRecoilValue(rewardState);
-  const highlight = useRecoilValue(highlightedStatState);
+  const [reward, setRewardState] = useRecoilState(rewardState);
+  const [highlight, setHighlighted] = useRecoilState(highlightedStatState);
   const [battleLog, setBattleLog] = useRecoilState(battleLogState);
-
+  const [pendingReward, setPendingReward] = useState(null);
   const [isSwitching, setIsSwitching] = useState(false);
   const [isBattleInProgress, setIsBattleInProgress] = useState(false);
 
@@ -167,6 +168,45 @@ export default function FloorScreen() {
     setIsSwitching(false);
   };
 
+  const handleRewardApply = async (type, index) => {
+    const updatedTeam = [...team];
+
+    if (type === "heal") {
+      updatedTeam[index] = {
+        ...updatedTeam[index],
+        stats: {
+          ...updatedTeam[index].stats,
+          hp: updatedTeam[index].stats.hp + 20,
+        },
+      };
+      setHighlighted({ index, stat: "hp" });
+    }
+
+    if (type === "buff") {
+      updatedTeam[index] = {
+        ...updatedTeam[index],
+        stats: {
+          ...updatedTeam[index].stats,
+          attack: updatedTeam[index].stats.attack + 10,
+        },
+      };
+      setHighlighted({ index, stat: "attack" });
+    }
+
+    if (type === "catch") {
+      const newMon = await getRandomPokemon();
+      setTeam([...updatedTeam, newMon]);
+    } else {
+      setTeam(updatedTeam);
+    }
+
+    setTimeout(() => setHighlighted(null), 2000);
+    setPendingReward(null);
+    setRewardState(null); // ← toujours null après application
+    setBattle({ playerHP: null, enemyHP: null, result: null });
+    setFloor(floor + 1);
+  };
+
   return (
     <div className="floor-screen">
       <h2>🏯 Floor {floor}</h2>
@@ -178,8 +218,10 @@ export default function FloorScreen() {
             key={poke.id}
             poke={{ ...poke, isActive: i === activeIndex }}
             highlight={highlight}
-            activeIndex={activeIndex}
-            onSwitch={setIsSwitching ? () => handleSwitch(i) : null}
+            onSwitch={() => handleSwitch(i)} // ✅ always available
+            onRewardClick={
+              pendingReward ? () => handleRewardApply(pendingReward, i) : null
+            }
           />
         ))}
       </div>
@@ -198,7 +240,12 @@ export default function FloorScreen() {
         ))}
       </div>
 
-      {battle.result === "win" && !reward && <RewardScreen />}
+      {battle.result === "win" && !reward && (
+        <RewardScreen
+          setPendingReward={setPendingReward}
+          onApplyReward={handleRewardApply}
+        />
+      )}
       {battle.result === "lose" && <GameOverScreen />}
 
       <div className="battle-log">
