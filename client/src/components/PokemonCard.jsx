@@ -1,4 +1,5 @@
 import HealthBar from "./HealthBar";
+import "./PokemonCard.css";
 
 function PokemonCard({
   poke,

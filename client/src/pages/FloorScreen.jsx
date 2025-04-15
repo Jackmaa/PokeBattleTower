@@ -211,33 +211,42 @@ export default function FloorScreen() {
     <div className="floor-screen">
       <h2>🏯 Floor {floor}</h2>
 
-      <div className="team-section">
-        <h3>Your Team</h3>
-        {team.map((poke, i) => (
-          <PokemonCard
-            key={poke.id}
-            poke={{ ...poke, isActive: i === activeIndex }}
-            highlight={highlight}
-            onSwitch={() => handleSwitch(i)} // ✅ always available
-            onRewardClick={
-              pendingReward ? () => handleRewardApply(pendingReward, i) : null
-            }
-          />
-        ))}
+      <div className="arena-layout">
+        <div className="team-column player-team">
+          <h3>🎒 Your Team</h3>
+          <div className="flex">
+            {team.map((poke, i) => (
+              <PokemonCard
+                key={poke.id}
+                poke={{ ...poke, isActive: i === activeIndex }}
+                highlight={highlight}
+                onSwitch={() => handleSwitch(i)}
+                onRewardClick={
+                  pendingReward
+                    ? () => handleRewardApply(pendingReward, i)
+                    : null
+                }
+                mode="default"
+              />
+            ))}
+          </div>
+        </div>
+
+        <div className="team-column enemy-team">
+          <h3>👾 Enemy Team</h3>
+          <div className="flex">
+            {enemyTeam.map((poke) => (
+              <PokemonCard key={poke.id} poke={{ ...poke, isEnemy: true }} />
+            ))}
+          </div>
+        </div>
       </div>
-      {!battle.result && !isSwitching && (
-        <div className="action-buttons">
+      <div className="arena-controls">
+        {!battle.result && (
           <button onClick={runTurnBasedBattle} disabled={isBattleInProgress}>
             ⚔️ Attack
           </button>
-        </div>
-      )}
-
-      <div className="team-section">
-        <h3>Enemy Team</h3>
-        {enemyTeam.map((poke) => (
-          <PokemonCard key={poke.id} poke={{ ...poke, isEnemy: true }} />
-        ))}
+        )}
       </div>
 
       {battle.result === "win" && !reward && (
@@ -248,7 +257,7 @@ export default function FloorScreen() {
       )}
       {battle.result === "lose" && <GameOverScreen />}
 
-      <div className="battle-log">
+      <div className="battle-log-panel">
         <h3>📜 Battle Log</h3>
         {battleLog.slice(-5).map((msg, i) => (
           <p key={i}>{msg}</p>

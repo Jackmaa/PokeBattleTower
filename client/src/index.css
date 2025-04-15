@@ -16,3 +16,67 @@
 .team-section {
   display: flex;
 }
+.arena-layout {
+  display: flex;
+  justify-content: space-between;
+  padding: 16px;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+.flex {
+  display: flex;
+}
+.team-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.player-team {
+  background: #f4faff;
+  border: 2px solid #0073e6;
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.enemy-team {
+  background: #fff3f3;
+  border: 2px solid #e63232;
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.arena-controls {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.arena-controls button {
+  padding: 10px 20px;
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.arena-controls button:hover {
+  background-color: #2563eb;
+}
+
+.battle-log-panel {
+  background: #000;
+  color: #0f0;
+  font-family: "Courier New", monospace;
+  padding: 12px;
+  margin-top: 20px;
+  border-radius: 6px;
+  max-height: 160px;
+  overflow-y: auto;
+}
