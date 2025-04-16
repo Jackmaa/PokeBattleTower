@@ -20,6 +20,8 @@ import RewardScreen from "../components/RewardScreen";
 import GameOverScreen from "../components/GameOverScreen";
 
 export default function FloorScreen() {
+  const [newMon, setNewMon] = useState(null);
+  const [releaseMode, setReleaseMode] = useState(false);
   const [team, setTeam] = useRecoilState(teamState);
   const [floor, setFloor] = useRecoilState(floorState);
   const [enemyTeam, setEnemyTeam] = useRecoilState(enemyTeamState);
@@ -184,10 +186,9 @@ export default function FloorScreen() {
           hp: updatedTeam[index].stats.hp + 20,
         },
       };
+      setTeam(updatedTeam);
       setHighlighted({ index, stat: "hp" });
-    }
-
-    if (type === "buff") {
+    } else if (type === "buff") {
       updatedTeam[index] = {
         ...updatedTeam[index],
         stats: {
@@ -195,19 +196,31 @@ export default function FloorScreen() {
           attack: updatedTeam[index].stats.attack + 10,
         },
       };
-      setHighlighted({ index, stat: "attack" });
-    }
-
-    if (type === "catch") {
-      const newMon = await getRandomPokemon();
-      setTeam([...updatedTeam, newMon]);
-    } else {
       setTeam(updatedTeam);
+      setHighlighted({ index, stat: "attack" });
+    } else if (type === "catch") {
+      const newMon = await getRandomPokemon();
+
+      if (team.length < 6) {
+        setTeam([...updatedTeam, newMon]);
+        setHighlighted(null);
+        setPendingReward(null);
+        setRewardState(null);
+        setBattle({ playerHP: null, enemyHP: null, result: null });
+        setFloor(floor + 1);
+      } else {
+        setNewMon(newMon);
+        setReleaseMode(true);
+        setPendingReward(null);
+      }
+
+      return; // prevent shared code below from running
     }
 
+    // ✅ Shared cleanup (for heal and buff)
     setTimeout(() => setHighlighted(null), 2000);
     setPendingReward(null);
-    setRewardState(null); // ← toujours null après application
+    setRewardState(null);
     setBattle({ playerHP: null, enemyHP: null, result: null });
     setFloor(floor + 1);
   };
@@ -259,6 +272,42 @@ export default function FloorScreen() {
           setPendingReward={setPendingReward}
           onApplyReward={handleRewardApply}
         />
+      )}
+      {releaseMode && newMon && (
+        <div className="release-choice-panel">
+          <h3>⚠️ Your team is full. Choose one Pokémon to release:</h3>
+          <div className="flex">
+            {team.map((poke, i) => (
+              <PokemonCard
+                key={poke.id}
+                poke={poke}
+                onRewardClick={() => {
+                  const trimmedTeam = [...team];
+                  trimmedTeam.splice(i, 1); // remove chosen
+                  setTeam([...trimmedTeam, newMon]);
+
+                  // Reset everything
+                  setReleaseMode(false);
+                  setNewMon(null);
+                  setHighlighted(null);
+                  setRewardState(null);
+                  setBattle({ playerHP: null, enemyHP: null, result: null });
+                  setFloor(floor + 1);
+                }}
+              />
+            ))}
+          </div>
+          <button
+            className="cancel-button"
+            onClick={() => {
+              setReleaseMode(false);
+              setNewMon(null);
+              setRewardState(null);
+            }}
+          >
+            ❌ Cancel
+          </button>
+        </div>
       )}
       {battle.result === "lose" && <GameOverScreen />}
 
