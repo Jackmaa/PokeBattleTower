@@ -1,5 +1,6 @@
 import HealthBar from "./HealthBar";
 import typeColors from "../utils/typeColors";
+import { useEffect, useState } from "react";
 import "./PokemonCard.css";
 
 function PokemonCard({
@@ -10,18 +11,28 @@ function PokemonCard({
   onRewardClick,
   mode = "default",
 }) {
+  const [wasHit, setWasHit] = useState(false);
+  const isFainted = poke.stats.hp <= 0;
   const primaryType = poke.types?.[0]?.toLowerCase();
   const borderColor = typeColors[primaryType] || "#ccc";
   const handleClick = () => {
     if (onRewardClick) onRewardClick();
     else if (mode === "starter" && onSwitch) onSwitch();
   };
+  useEffect(() => {
+    if (poke.stats.hp < (poke.stats.hp_prev || poke.stats.hp_max)) {
+      setWasHit(true);
+      const timeout = setTimeout(() => setWasHit(false), 300);
+      return () => clearTimeout(timeout);
+    }
+  }, [poke.stats.hp]);
 
   return (
     <div
-      className={`pokemon-card ${isEnemy ? "enemy" : ""} ${
-        onRewardClick ? "reward-target" : ""
-      }`}
+      className={`pokemon-card ${isEnemy ? "enemy" : ""} 
+      ${onRewardClick ? "reward-target" : ""}
+      ${wasHit ? "shake" : ""}
+      ${isFainted ? "fainted" : ""}`}
       onClick={onRewardClick || mode === "starter" ? handleClick : undefined}
       style={{
         borderColor: borderColor,

@@ -76,6 +76,9 @@ export default function FloorScreen() {
       return { finalDamage, typeMultiplier };
     };
 
+    let previousPlayerHP = player.stats.hp;
+    let previousEnemyHP = enemy.stats.hp;
+
     while (playerHP > 0 && enemyHP > 0) {
       for (const turn of order) {
         await new Promise((resolve) => setTimeout(resolve, 700)); // délai visuel
@@ -107,6 +110,7 @@ export default function FloorScreen() {
             ...enemy,
             stats: {
               ...enemy.stats,
+              hp_prev: previousEnemyHP,
               hp: Math.max(enemyHP, 0),
             },
           };
@@ -117,6 +121,7 @@ export default function FloorScreen() {
             ...updatedTeam[activeIndex],
             stats: {
               ...updatedTeam[activeIndex].stats,
+              hp_prev: previousPlayerHP,
               hp: Math.max(playerHP, 0),
             },
           };
