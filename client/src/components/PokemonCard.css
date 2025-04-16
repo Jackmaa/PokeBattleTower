@@ -1,43 +1,70 @@
 .pokemon-card {
-  display: grid;
-  place-items: center;
-  border: 2px solid #444;
-  background: #f9f9f9;
+  border: 3px solid;
   border-radius: 12px;
   padding: 12px;
-  margin: 8px;
-  width: 160px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s ease;
-  cursor: pointer;
+  margin: 10px;
+  width: 180px;
+  background: #ffffff;
+  transition: all 0.2s ease;
+  text-align: center;
+  position: relative;
 }
 
 .pokemon-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+  background-color: #f4faff;
+  cursor: pointer;
 }
 
 .pokemon-card.enemy {
-  background: #ffeaea;
-  border-color: #d33;
+  background: #fff3f3;
 }
 
-.pokemon-card img {
-  width: 96px;
-  height: 96px;
+.pokemon-card h4 {
+  margin: 8px 0 4px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.pokemon-card p {
+  margin: 2px 0;
+  font-size: 0.85rem;
+}
+
+.pokemon-card strong {
+  color: green;
+  font-size: 0.9rem;
+  margin-top: 4px;
+  display: block;
 }
 
 .pokemon-card button {
-  margin-top: 8px;
-  padding: 4px 8px;
+  margin-top: 6px;
+  padding: 4px 10px;
   background: #4e8cff;
   color: white;
   border: none;
   border-radius: 6px;
   font-weight: bold;
   cursor: pointer;
+  transition: background-color 0.2s;
 }
 
 .pokemon-card button:hover {
-  background: #336ee3;
+  background: #2563eb;
+}
+.pokemon-card.reward-target {
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.pokemon-card.reward-target:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 14px rgba(255, 215, 0, 0.7);
+  outline: 2px dashed gold;
+}
+
+.pokemon-card.reward-target:active {
+  transform: scale(0.98);
 }

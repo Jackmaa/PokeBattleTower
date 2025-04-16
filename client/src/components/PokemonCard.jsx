@@ -1,4 +1,5 @@
 import HealthBar from "./HealthBar";
+import typeColors from "../utils/typeColors";
 import "./PokemonCard.css";
 
 function PokemonCard({
@@ -9,6 +10,8 @@ function PokemonCard({
   onRewardClick,
   mode = "default",
 }) {
+  const primaryType = poke.types?.[0]?.toLowerCase();
+  const borderColor = typeColors[primaryType] || "#ccc";
   const handleClick = () => {
     if (onRewardClick) onRewardClick();
     else if (mode === "starter" && onSwitch) onSwitch();
@@ -16,8 +19,14 @@ function PokemonCard({
 
   return (
     <div
-      className={`pokemon-card ${isEnemy ? "enemy" : ""}`}
+      className={`pokemon-card ${isEnemy ? "enemy" : ""} ${
+        onRewardClick ? "reward-target" : ""
+      }`}
       onClick={onRewardClick || mode === "starter" ? handleClick : undefined}
+      style={{
+        borderColor: borderColor,
+        boxShadow: poke.isActive ? `0 0 12px ${borderColor}` : undefined,
+      }}
     >
       <img src={poke.sprite} alt={poke.name} />
       <h4>{poke.name}</h4>

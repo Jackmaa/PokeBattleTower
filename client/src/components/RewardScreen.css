@@ -1,0 +1,44 @@
+.reward-options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+  margin-top: 16px;
+}
+
+.reward-btn {
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 10px;
+  color: white;
+  width: 260px;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  letter-spacing: 0.5px;
+  transform: scale(1);
+}
+
+.reward-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.25);
+}
+
+.reward-btn:active {
+  transform: scale(0.98);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.reward-btn.heal {
+  background: linear-gradient(135deg, #58d68d, #2ecc71);
+}
+
+.reward-btn.catch {
+  background: linear-gradient(135deg, #5dade2, #3498db);
+}
+
+.reward-btn.buff {
+  background: linear-gradient(135deg, #f39c12, #e67e22);
+}
