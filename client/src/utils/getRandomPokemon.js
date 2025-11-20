@@ -1,4 +1,5 @@
 import axios from "axios";
+import { generatePokemonMoves } from "./moves";
 
 export const getRandomPokemon = async () => {
   const randomId = Math.floor(Math.random() * 151) + 1; //Kanto range
@@ -9,10 +10,12 @@ export const getRandomPokemon = async () => {
     acc[stat.stat.name] = stat.base_stat;
     return acc;
   }, {});
-  return {
+
+  const pokemonData = {
     id: pokemon.id,
     name: pokemon.name,
     sprite: pokemon.sprites.front_default,
+    level: 1, // Default level
     stats: {
       hp: rawStats["hp"],
       hp_max: rawStats["hp"],
@@ -22,7 +25,11 @@ export const getRandomPokemon = async () => {
       special_defense: rawStats["special-defense"],
       speed: rawStats["speed"],
     },
-    moves: pokemon.moves.slice(0, 4).map((m) => m.move.name),
     types: pokemon.types.map((t) => t.type.name),
   };
+
+  // Generate moves based on Pokemon type
+  pokemonData.moves = generatePokemonMoves(pokemonData);
+
+  return pokemonData;
 };

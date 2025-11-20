@@ -51,3 +51,6 @@ out/
 *.jpg
 *.jpeg
 *.gif
+
+.gitignore
+.claude
