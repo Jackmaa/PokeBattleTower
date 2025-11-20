@@ -11,6 +11,7 @@ import { activePokemonIndexState } from "../recoil/atoms/active";
 import { highlightedStatState } from "../recoil/atoms/highlight";
 import { battleLogState } from "../recoil/atoms/battleLog";
 import { currentNodeState, towerMapState } from "../recoil/atoms/towerMap";
+import { currencyState } from "../recoil/atoms/inventory";
 import { getNodeById } from "../utils/towerMap";
 import { getTypeEffectiveness } from "../utils/typeChart";
 import { generateEnemyTeam } from "../utils/generateEnemyTeam";
@@ -42,6 +43,7 @@ export default function FloorScreen({ onFloorComplete }) {
   const [reward, setRewardState] = useRecoilState(rewardState);
   const [highlight, setHighlighted] = useRecoilState(highlightedStatState);
   const [battleLog, setBattleLog] = useRecoilState(battleLogState);
+  const [currency, setCurrency] = useRecoilState(currencyState);
   const [pendingReward, setPendingReward] = useState(null);
   const [rewardApplied, setRewardApplied] = useState(false);
   const [isSwitching, setIsSwitching] = useState(false);
@@ -293,6 +295,11 @@ export default function FloorScreen({ onFloorComplete }) {
       playFaintSound();
       playVictorySound();
       setBattle({ playerHP, enemyHP, result: "win" });
+
+      // Award gold based on floor level
+      const goldReward = 50 + (floor * 10);
+      console.log(`[FloorScreen] Victory! Awarding ${goldReward} gold`);
+      setCurrency(prev => prev + goldReward);
     }
 
     setIsBattleInProgress(false);

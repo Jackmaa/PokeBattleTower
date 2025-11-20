@@ -37,10 +37,17 @@ export default function Button({
     lg: "px-6 py-3 text-lg"
   };
 
+  const handleClick = (e) => {
+    console.log('[Button] Clicked! Disabled:', disabled, 'Loading:', loading);
+    if (onClick && !disabled && !loading) {
+      onClick(e);
+    }
+  };
+
   return (
     <motion.button
       className={`${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${className}`}
-      onClick={onClick}
+      onClick={handleClick}
       disabled={disabled || loading}
       whileHover={{ scale: disabled || loading ? 1 : 1.05 }}
       whileTap={{ scale: disabled || loading ? 1 : 0.95 }}

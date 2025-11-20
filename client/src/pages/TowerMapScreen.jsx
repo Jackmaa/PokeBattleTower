@@ -1,7 +1,7 @@
 // 📁 TowerMapScreen.jsx
 // Tower map screen - Route selection between floors
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRecoilValue } from 'recoil';
 import { motion } from 'framer-motion';
 import { TowerMap } from '../components/tower';
@@ -12,6 +12,20 @@ export default function TowerMapScreen({ onNodeConfirm, onBack }) {
   const towerMap = useRecoilValue(towerMapState);
   const currentNodeId = useRecoilValue(currentNodeState);
   const [selectedNode, setSelectedNode] = useState(null);
+
+  // Debug: Log available nodes when map changes
+  useEffect(() => {
+    console.log('[TowerMapScreen] Current node:', currentNodeId);
+    const availableNodes = [];
+    towerMap.forEach(floor => {
+      floor.forEach(node => {
+        if (node.available && !node.visited) {
+          availableNodes.push(node.id);
+        }
+      });
+    });
+    console.log('[TowerMapScreen] Available nodes:', availableNodes);
+  }, [towerMap, currentNodeId]);
 
   const handleNodeSelect = (node) => {
     setSelectedNode(node);

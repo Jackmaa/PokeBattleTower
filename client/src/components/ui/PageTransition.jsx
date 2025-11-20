@@ -35,11 +35,20 @@ const PageTransition = forwardRef(function PageTransition({ children, variant = 
   return (
     <motion.div
       ref={ref}
-      initial={config.initial}
-      animate={config.animate}
-      exit={config.exit}
+      initial={{
+        ...config.initial,
+        pointerEvents: "none",
+      }}
+      animate={{
+        ...config.animate,
+        pointerEvents: "auto",
+      }}
+      exit={{
+        ...config.exit,
+        pointerEvents: "none",
+      }}
       transition={config.transition}
-      className="w-full h-full"
+      className="w-full h-full absolute inset-0"
     >
       {children}
     </motion.div>

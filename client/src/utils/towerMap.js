@@ -225,6 +225,8 @@ function connectNodes(map) {
  * @returns {Array} Updated map
  */
 export function updateMapAvailability(map, currentNodeId) {
+  console.log('[updateMapAvailability] Called with nodeId:', currentNodeId);
+
   // Deep clone the map
   const updatedMap = JSON.parse(JSON.stringify(map));
 
@@ -235,20 +237,29 @@ export function updateMapAvailability(map, currentNodeId) {
       if (node.id === currentNodeId) {
         currentNode = node;
         node.visited = true;
+        console.log('[updateMapAvailability] Found current node:', node.id, 'Type:', node.type);
+        console.log('[updateMapAvailability] Current node connections:', node.connections);
       }
     });
   });
 
-  if (!currentNode) return updatedMap;
+  if (!currentNode) {
+    console.warn('[updateMapAvailability] Current node not found!');
+    return updatedMap;
+  }
 
   // Make connected nodes available
+  const madeAvailable = [];
   updatedMap.forEach(floor => {
     floor.forEach(node => {
       if (currentNode.connections.includes(node.id)) {
         node.available = true;
+        madeAvailable.push(node.id);
       }
     });
   });
+
+  console.log('[updateMapAvailability] Made these nodes available:', madeAvailable);
 
   return updatedMap;
 }

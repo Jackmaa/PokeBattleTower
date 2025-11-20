@@ -2,6 +2,8 @@ import React from "react";
 import StarterScreen from "./pages/StarterScreen";
 import FloorScreen from "./pages/FloorScreen";
 import TowerMapScreen from "./pages/TowerMapScreen";
+import RestScreen from "./pages/RestScreen";
+import ShopScreen from "./pages/ShopScreen";
 import { useRecoilState } from "recoil";
 import { gameStartedState, gameViewState } from "./recoil/atoms/game";
 import { towerMapState, currentNodeState } from "./recoil/atoms/towerMap";
@@ -21,24 +23,23 @@ function App() {
   };
 
   const handleNodeConfirm = (node) => {
+    console.log('[App] handleNodeConfirm called with node:', node.id, 'Type:', node.type);
+
     // Update current node and mark it as visited
     setCurrentNodeId(node.id);
 
     // Update map to mark this node as visited and unlock next nodes
     const updatedMap = updateMapAvailability(towerMap, node.id);
+    console.log('[App] Setting updated map to state');
     setTowerMap(updatedMap);
 
     // When a node is selected, transition to the appropriate screen
     if (node.type === 'combat' || node.type === 'elite' || node.type === 'boss') {
       setGameView('floor');
     } else if (node.type === 'shop') {
-      // TODO: Navigate to shop screen
-      console.log('Shop not implemented yet');
-      setGameView('map'); // Return to map for now
+      setGameView('shop');
     } else if (node.type === 'heal') {
-      // TODO: Navigate to rest screen
-      console.log('Rest not implemented yet');
-      setGameView('map'); // Return to map for now
+      setGameView('rest');
     } else if (node.type === 'event') {
       // TODO: Navigate to event screen
       console.log('Event not implemented yet');
@@ -48,6 +49,16 @@ function App() {
 
   const handleFloorComplete = () => {
     // After completing a floor, return to map
+    setGameView('map');
+  };
+
+  const handleRestComplete = () => {
+    // After resting, return to map
+    setGameView('map');
+  };
+
+  const handleShopComplete = () => {
+    // After shopping, return to map
     setGameView('map');
   };
 
@@ -82,6 +93,14 @@ function App() {
         ) : gameView === 'floor' ? (
           <PageTransition key="floor" variant="fade">
             <FloorScreen onFloorComplete={handleFloorComplete} />
+          </PageTransition>
+        ) : gameView === 'rest' ? (
+          <PageTransition key="rest" variant="fade">
+            <RestScreen onComplete={handleRestComplete} />
+          </PageTransition>
+        ) : gameView === 'shop' ? (
+          <PageTransition key="shop" variant="fade">
+            <ShopScreen onComplete={handleShopComplete} />
           </PageTransition>
         ) : (
           <div key="unknown" className="min-h-screen flex items-center justify-center text-white text-2xl">

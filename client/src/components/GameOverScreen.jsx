@@ -13,6 +13,7 @@ import { highlightedStatState } from "../recoil/atoms/highlight";
 import { battleLogState } from "../recoil/atoms/battleLog";
 import { towerMapState, currentNodeState } from "../recoil/atoms/towerMap";
 import { enemyTeamState } from "../recoil/atoms/enemy";
+import { currencyState, inventoryState } from "../recoil/atoms/inventory";
 
 export default function GameOverScreen() {
   const resetTeam = useResetRecoilState(teamState);
@@ -27,6 +28,8 @@ export default function GameOverScreen() {
   const resetTowerMap = useResetRecoilState(towerMapState);
   const resetCurrentNode = useResetRecoilState(currentNodeState);
   const resetEnemyTeam = useResetRecoilState(enemyTeamState);
+  const resetCurrency = useResetRecoilState(currencyState);
+  const resetInventory = useResetRecoilState(inventoryState);
 
   const restart = () => {
     // Reset all game states
@@ -42,6 +45,8 @@ export default function GameOverScreen() {
     resetTowerMap();
     resetCurrentNode();
     resetEnemyTeam();
+    resetCurrency();
+    resetInventory();
   };
 
   return (

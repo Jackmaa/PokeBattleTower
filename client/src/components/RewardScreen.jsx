@@ -9,7 +9,7 @@ export default function RewardScreen({ setPendingReward, onApplyReward }) {
   const [showConfetti, setShowConfetti] = useState(true);
   const floor = useRecoilValue(floorState);
 
-  // Generate random confetti particles
+  // Generate random confetti particles (only once)
   const confettiParticles = useMemo(() =>
     Array.from({ length: 50 }, (_, i) => ({
       id: i,
@@ -20,8 +20,8 @@ export default function RewardScreen({ setPendingReward, onApplyReward }) {
     }))
   , []);
 
-  // Generate random rewards based on floor level
-  const rewards = useMemo(() => {
+  // Generate random rewards based on floor level (only once when component mounts)
+  const [rewards] = useState(() => {
     const generated = generateRandomRewards(3, floor);
     return generated.map(reward => ({
       ...reward,
@@ -33,7 +33,7 @@ export default function RewardScreen({ setPendingReward, onApplyReward }) {
         }
       },
     }));
-  }, [floor, setPendingReward, onApplyReward]);
+  });
 
   return (
     <motion.div
