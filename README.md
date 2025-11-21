@@ -168,7 +168,6 @@ Returns all saved runs (sorted by latest first).
 
 > _(Add game screen previews or demo GIFs here soon!)_
 
----
 
 ## 🧪 Want to Playtest?
 
