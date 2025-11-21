@@ -1,8 +1,9 @@
 import HealthBar from "./HealthBar";
 import typeColors from "../utils/typeColors";
 import StatusEffectOverlay from "./effects/StatusEffectOverlay";
-import { useEffect, useState } from "react";
+import { useEffect, useState, memo } from "react";
 import { motion } from "framer-motion";
+import { getLevelDisplayInfo } from "../utils/pokemonLeveling";
 
 function PokemonCard({
   poke,
@@ -10,8 +11,10 @@ function PokemonCard({
   highlight,
   onSwitch,
   onRewardClick,
-  mode = "default",
+  mode = "default", // "default", "starter", "nvm_combat"
   isAttacking = false,
+  isCurrentTurn = false, // For NvM combat - shows whose turn it is
+  enemyIntent = null, // For showing enemy targeting { moveName, targetName }
 }) {
   const [wasHit, setWasHit] = useState(false);
   const [spriteAnimation, setSpriteAnimation] = useState("idle");
@@ -109,7 +112,19 @@ function PokemonCard({
           }
           transition={{ type: "spring", stiffness: 260, damping: 20 }}
         />
-        {poke.isActive && (
+        {/* Current Turn Indicator (NvM mode) */}
+        {mode === "nvm_combat" && isCurrentTurn && !isFainted && (
+          <motion.div
+            className="absolute -top-2 -right-2 bg-yellow-500 rounded-full p-1"
+            initial={{ scale: 0 }}
+            animate={{ scale: [1, 1.2, 1] }}
+            transition={{ repeat: Infinity, duration: 1 }}
+          >
+            <span className="text-xs">⚔️</span>
+          </motion.div>
+        )}
+        {/* Legacy Active Indicator (non-NvM mode) */}
+        {mode !== "nvm_combat" && poke.isActive && (
           <motion.div
             className="absolute -top-2 -right-2 bg-gaming-success rounded-full p-1"
             initial={{ scale: 0 }}
@@ -127,7 +142,25 @@ function PokemonCard({
           {poke.name}
         </h4>
         {poke.level && (
-          <div className="text-xs text-white/60">Lv. {poke.level}</div>
+          <div className="flex flex-col items-center gap-0.5">
+            <div className="text-xs text-white/60">Lv. {poke.level}</div>
+            {/* XP Bar */}
+            {!poke.isEnemy && poke.xp !== undefined && (
+              <div className="w-full max-w-[80px]">
+                <div className="h-1 bg-gray-700 rounded-full overflow-hidden">
+                  <motion.div
+                    className="h-full bg-gradient-to-r from-yellow-400 to-amber-500"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${getLevelDisplayInfo(poke).progress * 100}%` }}
+                    transition={{ duration: 0.5 }}
+                  />
+                </div>
+                <p className="text-[8px] text-white/40 text-center mt-0.5">
+                  {getLevelDisplayInfo(poke).xpInLevel}/{getLevelDisplayInfo(poke).xpNeeded} XP
+                </p>
+              </div>
+            )}
+          </div>
         )}
       </div>
 
@@ -153,47 +186,77 @@ function PokemonCard({
       {/* Health Bar */}
       <HealthBar current={poke.stats.hp} max={poke.stats.hp_max} />
 
-      {/* Stats Grid */}
-      <div className={`grid grid-cols-2 gap-1 mt-2 ${mode === 'starter' ? 'text-sm' : 'text-xs'} flex-grow`}>
-        <p className={`${
-          highlight?.index === poke.id && highlight?.stat === "attack"
-            ? "highlight"
-            : ""
+      {/* Stats Grid - Enhanced */}
+      <div className={`grid grid-cols-3 gap-1 mt-2 ${mode === 'starter' ? 'text-sm' : 'text-[10px]'} flex-grow`}>
+        {/* Row 1: ATK, DEF, SPD */}
+        <div className={`flex flex-col items-center p-1 rounded bg-red-500/10 border border-red-500/20 ${
+          highlight?.index === poke.id && highlight?.stat === "attack" ? "ring-2 ring-red-400" : ""
         }`}>
-          <span className="text-white/60">ATK:</span> <span className="font-semibold">{poke.stats.attack}</span>
-        </p>
-        <p>
-          <span className="text-white/60">DEF:</span> <span className="font-semibold">{poke.stats.defense}</span>
-        </p>
-        <p>
-          <span className="text-white/60">SPD:</span> <span className="font-semibold">{poke.stats.speed}</span>
-        </p>
-        <p>
-          <span className="text-white/60">SPA:</span> <span className="font-semibold">{poke.stats.special_attack}</span>
-        </p>
-        <p className="col-span-2 text-center">
-          <span className="text-white/60">SPD:</span> <span className="font-semibold">{poke.stats.special_defense}</span>
-        </p>
+          <span className="text-red-400">⚔️</span>
+          <span className="font-bold text-white">{poke.stats.attack}</span>
+        </div>
+        <div className="flex flex-col items-center p-1 rounded bg-blue-500/10 border border-blue-500/20">
+          <span className="text-blue-400">🛡️</span>
+          <span className="font-bold text-white">{poke.stats.defense}</span>
+        </div>
+        <div className="flex flex-col items-center p-1 rounded bg-yellow-500/10 border border-yellow-500/20">
+          <span className="text-yellow-400">⚡</span>
+          <span className="font-bold text-white">{poke.stats.speed}</span>
+        </div>
+        {/* Row 2: SPA, SPD */}
+        <div className="flex flex-col items-center p-1 rounded bg-purple-500/10 border border-purple-500/20">
+          <span className="text-purple-400">✨</span>
+          <span className="font-bold text-white">{poke.stats.special_attack}</span>
+        </div>
+        <div className="flex flex-col items-center p-1 rounded bg-cyan-500/10 border border-cyan-500/20">
+          <span className="text-cyan-400">🔮</span>
+          <span className="font-bold text-white">{poke.stats.special_defense}</span>
+        </div>
+        {/* Empty cell for balance or could show total */}
+        <div className="flex flex-col items-center p-1 rounded bg-white/5 border border-white/10">
+          <span className="text-white/40 text-[8px]">TOT</span>
+          <span className="font-bold text-white/60 text-[9px]">
+            {poke.stats.attack + poke.stats.defense + poke.stats.speed + poke.stats.special_attack + poke.stats.special_defense}
+          </span>
+        </div>
       </div>
 
-      {/* Switch Button - Fixed height to maintain card size */}
-      <div className="mt-2" style={{ minHeight: mode === 'starter' ? '40px' : '32px' }}>
-        {poke.stats.hp > 0 && !poke.isActive && onSwitch && mode !== "starter" && (
-          <motion.button
-            className="btn-primary w-full text-xs py-1.5"
-            onClick={(e) => {
-              e.stopPropagation();
-              onSwitch();
-            }}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            Switch
-          </motion.button>
-        )}
-      </div>
+      {/* Enemy Intent Display (NvM mode) */}
+      {mode === "nvm_combat" && enemyIntent && !isFainted && (
+        <motion.div
+          className="mt-2 p-1.5 bg-red-900/50 rounded-lg border border-red-500/30 text-center"
+          initial={{ opacity: 0, y: -5 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <p className="text-[10px] text-red-300">
+            <span className="font-bold">{enemyIntent.moveName}</span>
+            {enemyIntent.targetName && (
+              <span className="text-red-400"> → {enemyIntent.targetName}</span>
+            )}
+          </p>
+        </motion.div>
+      )}
+
+      {/* Switch Button - Hidden in NvM combat mode */}
+      {mode !== "nvm_combat" && (
+        <div className="mt-2" style={{ minHeight: mode === 'starter' ? '40px' : '32px' }}>
+          {poke.stats.hp > 0 && !poke.isActive && onSwitch && mode !== "starter" && (
+            <motion.button
+              className="btn-primary w-full text-xs py-1.5"
+              onClick={(e) => {
+                e.stopPropagation();
+                onSwitch();
+              }}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              Switch
+            </motion.button>
+          )}
+        </div>
+      )}
     </motion.div>
   );
 }
 
-export default PokemonCard;
+export default memo(PokemonCard);
