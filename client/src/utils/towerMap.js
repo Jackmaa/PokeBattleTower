@@ -132,40 +132,56 @@ export function generateTowerMap(totalFloors = 20, pathWidth = 4) {
   return map;
 }
 
+// Boss floors configuration
+const BOSS_FLOORS = [5, 10, 15]; // Mini-bosses at these floors (final boss is last floor)
+
 /**
  * Determine node type based on floor number and game rules
  */
 function determineNodeType(floor, totalFloors) {
-  // Boss at the end (handled separately)
+  // Final boss at the end (handled separately in generateTowerMap)
   if (floor === totalFloors - 1) {
     return NODE_TYPES.BOSS;
   }
 
-  // Elite battles every 5 floors (but not at boss floor)
-  if (floor % 5 === 0 && floor > 0 && floor < totalFloors - 1) {
+  // Mini-boss floors (5, 10, 15)
+  if (BOSS_FLOORS.includes(floor)) {
+    return NODE_TYPES.BOSS;
+  }
+
+  // Elite battles at floors 3, 7, 12, 17 (challenging but not boss)
+  const ELITE_FLOORS = [3, 7, 12, 17];
+  if (ELITE_FLOORS.includes(floor)) {
     return NODE_TYPES.ELITE;
+  }
+
+  // Guaranteed heal/shop before boss floors
+  if (BOSS_FLOORS.includes(floor + 1) || floor === totalFloors - 2) {
+    const random = Math.random();
+    if (random < 0.5) return NODE_TYPES.HEAL;
+    return NODE_TYPES.SHOP;
   }
 
   // Rest/Shop appear more frequently in early-mid game
   const random = Math.random();
 
   if (floor <= 3) {
-    // Early game: more heals
+    // Early game: more heals and events
     if (random < 0.15) return NODE_TYPES.HEAL;
     if (random < 0.25) return NODE_TYPES.SHOP;
-    if (random < 0.35) return NODE_TYPES.EVENT;
+    if (random < 0.40) return NODE_TYPES.EVENT;
     return NODE_TYPES.COMBAT;
   } else if (floor <= 10) {
     // Mid game: balanced
-    if (random < 0.1) return NODE_TYPES.HEAL;
-    if (random < 0.2) return NODE_TYPES.SHOP;
+    if (random < 0.12) return NODE_TYPES.HEAL;
+    if (random < 0.22) return NODE_TYPES.SHOP;
     if (random < 0.35) return NODE_TYPES.EVENT;
     return NODE_TYPES.COMBAT;
   } else {
-    // Late game: more combat
+    // Late game: more combat, less help
     if (random < 0.08) return NODE_TYPES.HEAL;
     if (random < 0.15) return NODE_TYPES.SHOP;
-    if (random < 0.25) return NODE_TYPES.EVENT;
+    if (random < 0.22) return NODE_TYPES.EVENT;
     return NODE_TYPES.COMBAT;
   }
 }

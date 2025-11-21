@@ -2,16 +2,37 @@
 // Tower map screen - Route selection between floors
 
 import { useState, useEffect } from 'react';
-import { useRecoilValue } from 'recoil';
-import { motion } from 'framer-motion';
+import { useRecoilValue, useRecoilState } from 'recoil';
+import { motion, AnimatePresence } from 'framer-motion';
 import { TowerMap } from '../components/tower';
 import { Button } from '../components/ui';
 import { towerMapState, currentNodeState } from '../recoil/atoms/towerMap';
+import { gameViewState } from '../recoil/atoms/game';
+import { showSettingsMenuState } from '../recoil/atoms/settings';
+import SaveLoadUI from '../components/SaveLoadUI';
+import SettingsMenu from '../components/SettingsMenu';
+import LeaderboardScreen from './LeaderboardScreen';
+import { useAutoSave } from '../hooks/useAutoSave';
 
 export default function TowerMapScreen({ onNodeConfirm, onBack }) {
   const towerMap = useRecoilValue(towerMapState);
   const currentNodeId = useRecoilValue(currentNodeState);
+  const [gameView, setGameView] = useRecoilState(gameViewState);
+  const [showSettingsMenu, setShowSettingsMenu] = useRecoilState(showSettingsMenuState);
   const [selectedNode, setSelectedNode] = useState(null);
+  const [showSaveUI, setShowSaveUI] = useState(false);
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [saveMode, setSaveMode] = useState('load');
+  const [autoSaveIndicator, setAutoSaveIndicator] = useState(false);
+
+  // Enable auto-save
+  useAutoSave(30000, true, {
+    saveOnFloorChange: true,
+    onAutoSave: () => {
+      setAutoSaveIndicator(true);
+      setTimeout(() => setAutoSaveIndicator(false), 2000);
+    }
+  });
 
   // Debug: Log available nodes when map changes
   useEffect(() => {
@@ -71,11 +92,61 @@ export default function TowerMapScreen({ onNodeConfirm, onBack }) {
             </p>
           </div>
 
-          {onBack && (
-            <Button variant="secondary" onClick={onBack}>
-              ← Back
+          <div className="flex gap-2">
+            <Button
+              variant="secondary"
+              onClick={() => setShowLeaderboard(true)}
+              className="bg-gradient-to-r from-yellow-600/80 to-amber-600/80 hover:from-yellow-500/80 hover:to-amber-500/80 border-2 border-yellow-400/50"
+              title="Leaderboard"
+            >
+              🏆
             </Button>
-          )}
+
+            <Button
+              variant="secondary"
+              onClick={() => setShowSettingsMenu(true)}
+              className="bg-gradient-to-r from-slate-600/80 to-gray-600/80 hover:from-slate-500/80 hover:to-gray-500/80 border-2 border-slate-400/50"
+              title="Settings"
+            >
+              ⚙️
+            </Button>
+
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setSaveMode('save');
+                setShowSaveUI(true);
+              }}
+              className="bg-gradient-to-r from-green-600/80 to-emerald-600/80 hover:from-green-500/80 hover:to-emerald-500/80 border-2 border-green-400/50"
+            >
+              💾
+            </Button>
+
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setSaveMode('load');
+                setShowSaveUI(true);
+              }}
+              className="bg-gradient-to-r from-blue-600/80 to-cyan-600/80 hover:from-blue-500/80 hover:to-cyan-500/80 border-2 border-blue-400/50"
+            >
+              📂
+            </Button>
+
+            <Button
+              variant="secondary"
+              onClick={() => setGameView('equip')}
+              className="bg-gradient-to-r from-purple-600/80 to-pink-600/80 hover:from-purple-500/80 hover:to-pink-500/80 border-2 border-purple-400/50"
+            >
+              🎒
+            </Button>
+
+            {onBack && (
+              <Button variant="secondary" onClick={onBack}>
+                ← Back
+              </Button>
+            )}
+          </div>
         </motion.div>
 
         {/* Tower Map */}
@@ -166,7 +237,50 @@ export default function TowerMapScreen({ onNodeConfirm, onBack }) {
             </p>
           </motion.div>
         )}
+
+        {/* Auto-save Indicator */}
+        <AnimatePresence>
+          {autoSaveIndicator && (
+            <motion.div
+              className="fixed bottom-8 right-8 px-6 py-3 bg-green-600/90 backdrop-blur-sm rounded-lg border-2 border-green-400 shadow-lg"
+              initial={{ opacity: 0, y: 20, scale: 0.8 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 20, scale: 0.8 }}
+            >
+              <div className="flex items-center gap-2 text-white font-bold">
+                <span className="text-xl">💾</span>
+                <span>Game Auto-Saved</span>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
+
+      {/* Save/Load UI Modal */}
+      <AnimatePresence>
+        {showSaveUI && (
+          <SaveLoadUI
+            mode={saveMode}
+            onClose={() => setShowSaveUI(false)}
+            onLoadComplete={(saveData) => {
+              console.log('Game loaded:', saveData);
+              setShowSaveUI(false);
+            }}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Settings Menu */}
+      <AnimatePresence>
+        {showSettingsMenu && <SettingsMenu />}
+      </AnimatePresence>
+
+      {/* Leaderboard */}
+      <AnimatePresence>
+        {showLeaderboard && (
+          <LeaderboardScreen onClose={() => setShowLeaderboard(false)} />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
