@@ -4,7 +4,26 @@
 import { motion } from "framer-motion";
 import typeColors from "../utils/typeColors";
 import { getTypeEffectiveness } from "../utils/typeChart";
+import { TARGET_TYPES } from "../utils/moves";
 import { Card } from "./ui";
+
+// Status effect configuration for badges
+const STATUS_CONFIG = {
+  poisoned: { emoji: '☠️', color: 'rgba(168, 85, 247, 0.5)', border: 'rgba(168, 85, 247, 0.7)', text: '#d8b4fe' },
+  badly_poisoned: { emoji: '☠️', color: 'rgba(147, 51, 234, 0.5)', border: 'rgba(147, 51, 234, 0.7)', text: '#c084fc' },
+  paralyzed: { emoji: '⚡', color: 'rgba(234, 179, 8, 0.5)', border: 'rgba(234, 179, 8, 0.7)', text: '#fde047' },
+  burned: { emoji: '🔥', color: 'rgba(249, 115, 22, 0.5)', border: 'rgba(249, 115, 22, 0.7)', text: '#fdba74' },
+  frozen: { emoji: '❄️', color: 'rgba(6, 182, 212, 0.5)', border: 'rgba(6, 182, 212, 0.7)', text: '#67e8f9' },
+  asleep: { emoji: '💤', color: 'rgba(100, 116, 139, 0.5)', border: 'rgba(100, 116, 139, 0.7)', text: '#cbd5e1' },
+  confused: { emoji: '😵', color: 'rgba(236, 72, 153, 0.5)', border: 'rgba(236, 72, 153, 0.7)', text: '#f9a8d4' },
+};
+
+// Check if move is AOE
+const isAOEMove = (target) => {
+  return target === TARGET_TYPES.ALL_ENEMIES ||
+         target === TARGET_TYPES.ALL_ALLIES ||
+         target === TARGET_TYPES.ALL_OTHER;
+};
 
 export default function MoveSelector({ moves, onSelectMove, disabled = false, enemyTypes = [] }) {
   if (!moves || moves.length === 0) {
@@ -64,6 +83,32 @@ export default function MoveSelector({ moves, onSelectMove, disabled = false, en
                     {move.category}
                   </span>
                 </div>
+
+                {/* AOE and Status Effect Badges */}
+                {(isAOEMove(move.target) || move.effect?.status) && (
+                  <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                    {/* AOE Badge */}
+                    {isAOEMove(move.target) && (
+                      <span className="px-1.5 py-0.5 text-[10px] font-bold rounded border bg-orange-500/30 border-orange-400/50 text-orange-300">
+                        💥 AOE
+                      </span>
+                    )}
+
+                    {/* Status Effect Badge */}
+                    {move.effect?.status && STATUS_CONFIG[move.effect.status] && (
+                      <span
+                        className="px-1.5 py-0.5 text-[10px] font-bold rounded border"
+                        style={{
+                          backgroundColor: STATUS_CONFIG[move.effect.status].color,
+                          borderColor: STATUS_CONFIG[move.effect.status].border,
+                          color: STATUS_CONFIG[move.effect.status].text,
+                        }}
+                      >
+                        {STATUS_CONFIG[move.effect.status].emoji} {move.effect.chance || 100}%
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Move Stats */}

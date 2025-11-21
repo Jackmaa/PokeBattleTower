@@ -1,5 +1,37 @@
 @import "tailwindcss";
 
+/* Multi-theme CSS variables with dark theme as default */
+:root {
+  /* Primary backgrounds */
+  --bg-primary: #0f0a1e;
+  --bg-secondary: #1a1130;
+  --bg-tertiary: #241845;
+
+  /* Gradient colors */
+  --gradient-from: #1e1b4b;
+  --gradient-via: #312e81;
+  --gradient-to: #0f0a1e;
+
+  /* Accent colors */
+  --accent-primary: #818cf8;
+  --accent-secondary: #a78bfa;
+  --accent-tertiary: #c4b5fd;
+
+  /* Text colors */
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.8);
+  --text-muted: rgba(255, 255, 255, 0.6);
+
+  /* Border colors */
+  --border-primary: rgba(129, 140, 248, 0.3);
+  --border-secondary: rgba(255, 255, 255, 0.1);
+
+  /* Orb colors for background */
+  --orb-1: rgba(168, 85, 247, 0.3);
+  --orb-2: rgba(59, 130, 246, 0.3);
+  --orb-3: rgba(99, 102, 241, 0.2);
+}
+
 /* Custom theme with CSS variables */
 @theme {
   --color-gaming-dark: #0f0f1e;
