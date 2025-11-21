@@ -43,7 +43,7 @@ const MEDICINE_ITEMS = [
     price: 700,
     icon: '🧪',
     effect: { type: 'heal', value: 50 },
-    available: false,
+    available: true, // ✅ Available
   },
   {
     id: 'hyper_potion',
@@ -54,7 +54,7 @@ const MEDICINE_ITEMS = [
     price: 1500,
     icon: '🧪',
     effect: { type: 'heal', value: 120 },
-    available: false,
+    available: true, // ✅ Available
   },
   {
     id: 'max_potion',
@@ -65,7 +65,7 @@ const MEDICINE_ITEMS = [
     price: 2500,
     icon: '🧪',
     effect: { type: 'heal', value: 'full' },
-    available: false,
+    available: true, // ✅ Available
   },
   {
     id: 'full_restore',
@@ -76,7 +76,7 @@ const MEDICINE_ITEMS = [
     price: 3000,
     icon: '💊',
     effect: { type: 'heal_full_status' },
-    available: false,
+    available: true, // ✅ Available
   },
   {
     id: 'revive',
@@ -87,7 +87,7 @@ const MEDICINE_ITEMS = [
     price: 2000,
     icon: '💫',
     effect: { type: 'revive', value: 0.5 },
-    available: false,
+    available: true, // ✅ Available
   },
   {
     id: 'max_revive',
@@ -98,7 +98,7 @@ const MEDICINE_ITEMS = [
     price: 4000,
     icon: '✨',
     effect: { type: 'revive', value: 1.0 },
-    available: false,
+    available: true, // ✅ Available
   },
   {
     id: 'elixir',
@@ -109,7 +109,7 @@ const MEDICINE_ITEMS = [
     price: 1500,
     icon: '💧',
     effect: { type: 'pp_restore', value: 10, target: 'all_moves' },
-    available: false,
+    available: true, // ✅ Available
   },
   {
     id: 'max_elixir',
@@ -120,7 +120,7 @@ const MEDICINE_ITEMS = [
     price: 3000,
     icon: '💧',
     effect: { type: 'pp_restore', value: 'full', target: 'all_moves' },
-    available: false,
+    available: true, // ✅ Available
   },
   {
     id: 'ether',
@@ -131,7 +131,7 @@ const MEDICINE_ITEMS = [
     price: 1200,
     icon: '💧',
     effect: { type: 'pp_restore', value: 10, target: 'single_move' },
-    available: false,
+    available: true, // ✅ Available
   },
   {
     id: 'max_ether',
@@ -142,7 +142,7 @@ const MEDICINE_ITEMS = [
     price: 2000,
     icon: '💧',
     effect: { type: 'pp_restore', value: 'full', target: 'single_move' },
-    available: false,
+    available: true, // ✅ Available
   },
 ];
 
@@ -179,7 +179,7 @@ const BATTLE_BOOST_ITEMS = [
     price: 500,
     icon: '✨',
     effect: { type: 'stat_boost', stat: 'special_attack', stages: 2, duration: 'battle' },
-    available: false,
+    available: true, // ✅ Available
   },
   {
     id: 'x_sp_def',
@@ -190,7 +190,7 @@ const BATTLE_BOOST_ITEMS = [
     price: 500,
     icon: '🔰',
     effect: { type: 'stat_boost', stat: 'special_defense', stages: 2, duration: 'battle' },
-    available: false,
+    available: true, // ✅ Available
   },
   {
     id: 'x_speed',
@@ -201,7 +201,7 @@ const BATTLE_BOOST_ITEMS = [
     price: 500,
     icon: '💨',
     effect: { type: 'stat_boost', stat: 'speed', stages: 2, duration: 'battle' },
-    available: false,
+    available: true, // ✅ Available
   },
   {
     id: 'x_accuracy',
@@ -245,77 +245,77 @@ const VITAMIN_ITEMS = [
     name: 'Protein',
     category: ITEM_CATEGORIES.VITAMINS,
     rarity: ITEM_RARITY.RARE,
-    description: 'Permanently increases Attack EV',
+    description: 'Permanently increases Attack by 10',
     price: 10000,
     icon: '💪',
     effect: { type: 'ev_boost', stat: 'attack', value: 10 },
-    available: false,
+    available: true, // ✅ Available
   },
   {
     id: 'iron',
     name: 'Iron',
     category: ITEM_CATEGORIES.VITAMINS,
     rarity: ITEM_RARITY.RARE,
-    description: 'Permanently increases Defense EV',
+    description: 'Permanently increases Defense by 10',
     price: 10000,
     icon: '🛡️',
     effect: { type: 'ev_boost', stat: 'defense', value: 10 },
-    available: false,
+    available: true, // ✅ Available
   },
   {
     id: 'calcium',
     name: 'Calcium',
     category: ITEM_CATEGORIES.VITAMINS,
     rarity: ITEM_RARITY.RARE,
-    description: 'Permanently increases Special Attack EV',
+    description: 'Permanently increases Special Attack by 10',
     price: 10000,
     icon: '✨',
     effect: { type: 'ev_boost', stat: 'special_attack', value: 10 },
-    available: false,
+    available: true, // ✅ Available
   },
   {
     id: 'zinc',
     name: 'Zinc',
     category: ITEM_CATEGORIES.VITAMINS,
     rarity: ITEM_RARITY.RARE,
-    description: 'Permanently increases Special Defense EV',
+    description: 'Permanently increases Special Defense by 10',
     price: 10000,
     icon: '🔰',
     effect: { type: 'ev_boost', stat: 'special_defense', value: 10 },
-    available: false,
+    available: true, // ✅ Available
   },
   {
     id: 'carbos',
     name: 'Carbos',
     category: ITEM_CATEGORIES.VITAMINS,
     rarity: ITEM_RARITY.RARE,
-    description: 'Permanently increases Speed EV',
+    description: 'Permanently increases Speed by 10',
     price: 10000,
     icon: '💨',
     effect: { type: 'ev_boost', stat: 'speed', value: 10 },
-    available: false,
+    available: true, // ✅ Available
   },
   {
     id: 'hp_up',
     name: 'HP Up',
     category: ITEM_CATEGORIES.VITAMINS,
     rarity: ITEM_RARITY.RARE,
-    description: 'Permanently increases HP EV',
+    description: 'Permanently increases HP by 10',
     price: 10000,
     icon: '❤️',
     effect: { type: 'ev_boost', stat: 'hp', value: 10 },
-    available: false,
+    available: true, // ✅ Available
   },
   {
     id: 'rare_candy',
     name: 'Rare Candy',
     category: ITEM_CATEGORIES.VITAMINS,
     rarity: ITEM_RARITY.LEGENDARY,
-    description: 'Raises a Pokémon\'s level by 1',
+    description: 'Raises a Pokémon\'s level by 1 (all stats +5)',
     price: 5000,
     icon: '🍬',
     effect: { type: 'level_up', value: 1 },
-    available: false,
+    available: true, // ✅ Available
   },
 ];
 
@@ -326,55 +326,55 @@ const EVOLUTION_ITEMS = [
     name: 'Fire Stone',
     category: ITEM_CATEGORIES.EVOLUTION,
     rarity: ITEM_RARITY.RARE,
-    description: 'Evolves certain Fire-type Pokémon',
+    description: 'Evolves certain Fire-type Pokémon (Vulpix, Growlithe, Eevee)',
     price: 3000,
     icon: '🔥',
     effect: { type: 'evolution', stone_type: 'fire' },
-    available: false,
+    available: true, // ✅ Available
   },
   {
     id: 'water_stone',
     name: 'Water Stone',
     category: ITEM_CATEGORIES.EVOLUTION,
     rarity: ITEM_RARITY.RARE,
-    description: 'Evolves certain Water-type Pokémon',
+    description: 'Evolves certain Water-type Pokémon (Poliwhirl, Shellder, Staryu, Eevee)',
     price: 3000,
     icon: '💧',
     effect: { type: 'evolution', stone_type: 'water' },
-    available: false,
+    available: true, // ✅ Available
   },
   {
     id: 'thunder_stone',
     name: 'Thunder Stone',
     category: ITEM_CATEGORIES.EVOLUTION,
     rarity: ITEM_RARITY.RARE,
-    description: 'Evolves certain Electric-type Pokémon',
+    description: 'Evolves certain Electric-type Pokémon (Pikachu, Eevee)',
     price: 3000,
     icon: '⚡',
     effect: { type: 'evolution', stone_type: 'thunder' },
-    available: false,
+    available: true, // ✅ Available
   },
   {
     id: 'leaf_stone',
     name: 'Leaf Stone',
     category: ITEM_CATEGORIES.EVOLUTION,
     rarity: ITEM_RARITY.RARE,
-    description: 'Evolves certain Grass-type Pokémon',
+    description: 'Evolves certain Grass-type Pokémon (Gloom, Weepinbell, Exeggcute)',
     price: 3000,
     icon: '🍃',
     effect: { type: 'evolution', stone_type: 'leaf' },
-    available: false,
+    available: true, // ✅ Available
   },
   {
     id: 'moon_stone',
     name: 'Moon Stone',
     category: ITEM_CATEGORIES.EVOLUTION,
     rarity: ITEM_RARITY.RARE,
-    description: 'Evolves certain Pokémon',
+    description: 'Evolves certain Pokémon (Nidorino, Nidorina, Clefairy, Jigglypuff)',
     price: 3000,
     icon: '🌙',
     effect: { type: 'evolution', stone_type: 'moon' },
-    available: false,
+    available: true, // ✅ Available
   },
   {
     id: 'sun_stone',
@@ -440,44 +440,44 @@ const HELD_ITEMS = [
     name: 'Leftovers',
     category: ITEM_CATEGORIES.HELD_ITEMS,
     rarity: ITEM_RARITY.RARE,
-    description: 'Restores 1/16 of max HP each turn',
+    description: '[Equip] Restores 1/16 of max HP each turn (passive)',
     price: 4000,
     icon: '🍖',
-    effect: { type: 'held_passive', action: 'heal_per_turn', value: 0.0625 },
-    available: false,
+    effect: { type: 'held_regen', trigger: 'end_of_turn', value: 0.0625 },
+    available: true, // ✅ Available
   },
   {
     id: 'choice_band',
     name: 'Choice Band',
     category: ITEM_CATEGORIES.HELD_ITEMS,
     rarity: ITEM_RARITY.RARE,
-    description: 'Boosts Attack by 50% but locks you into one move',
+    description: '[Equip] Boosts Attack by 50% but locks you into one move',
     price: 5000,
     icon: '🎀',
-    effect: { type: 'held_stat_boost', stat: 'attack', multiplier: 1.5, restriction: 'lock_move' },
-    available: false,
+    effect: { type: 'held_choice', stat: 'attack', stat_multiplier: 1.5 },
+    available: true, // ✅ Available
   },
   {
     id: 'choice_specs',
     name: 'Choice Specs',
     category: ITEM_CATEGORIES.HELD_ITEMS,
     rarity: ITEM_RARITY.RARE,
-    description: 'Boosts Sp. Atk by 50% but locks you into one move',
+    description: '[Equip] Boosts Sp. Atk by 50% but locks you into one move',
     price: 5000,
     icon: '👓',
-    effect: { type: 'held_stat_boost', stat: 'special_attack', multiplier: 1.5, restriction: 'lock_move' },
-    available: false,
+    effect: { type: 'held_choice', stat: 'special_attack', stat_multiplier: 1.5 },
+    available: true, // ✅ Available
   },
   {
     id: 'choice_scarf',
     name: 'Choice Scarf',
     category: ITEM_CATEGORIES.HELD_ITEMS,
     rarity: ITEM_RARITY.RARE,
-    description: 'Boosts Speed by 50% but locks you into one move',
+    description: '[Equip] Boosts Speed by 50% but locks you into one move',
     price: 5000,
     icon: '🧣',
-    effect: { type: 'held_stat_boost', stat: 'speed', multiplier: 1.5, restriction: 'lock_move' },
-    available: false,
+    effect: { type: 'held_choice', stat: 'speed', stat_multiplier: 1.5 },
+    available: true, // ✅ Available
   },
   {
     id: 'focus_sash',
@@ -521,33 +521,87 @@ const BERRY_ITEMS = [
     name: 'Oran Berry',
     category: ITEM_CATEGORIES.BERRIES,
     rarity: ITEM_RARITY.COMMON,
-    description: 'Restores 10 HP when held and HP drops low',
+    description: '[Equip] Restores 10 HP when HP drops below 50% (auto-trigger)',
     price: 300,
     icon: '🫐',
     effect: { type: 'held_conditional', trigger: 'hp_below_50%', action: 'heal', value: 10 },
-    available: false,
+    available: true, // ✅ Available
   },
   {
     id: 'sitrus_berry',
     name: 'Sitrus Berry',
     category: ITEM_CATEGORIES.BERRIES,
     rarity: ITEM_RARITY.UNCOMMON,
-    description: 'Restores 25% HP when held and HP drops below 50%',
+    description: '[Equip] Restores 25% HP when HP drops below 50% (auto-trigger)',
     price: 800,
     icon: '🍊',
-    effect: { type: 'held_conditional', trigger: 'hp_below_50%', action: 'heal', value: 0.25 },
-    available: false,
+    effect: { type: 'held_conditional', trigger: 'hp_below_50%', action: 'heal_percent', value: 25 },
+    available: true, // ✅ Available
   },
   {
     id: 'lum_berry',
     name: 'Lum Berry',
     category: ITEM_CATEGORIES.BERRIES,
     rarity: ITEM_RARITY.UNCOMMON,
-    description: 'Cures any status condition when held',
+    description: '[Equip] Cures status conditions (auto-trigger when afflicted)',
     price: 1000,
     icon: '🍋',
-    effect: { type: 'held_conditional', trigger: 'status_affliction', action: 'cure_status' },
-    available: false,
+    effect: { type: 'held_conditional', trigger: 'status_condition', action: 'cure_status' },
+    available: true, // ✅ Available
+  },
+];
+
+// Mega Stones - Enable Mega Evolution
+const MEGA_STONE_ITEMS = [
+  {
+    id: 'charizardite_x',
+    name: 'Charizardite X',
+    category: ITEM_CATEGORIES.MEGA_STONES,
+    rarity: ITEM_RARITY.LEGENDARY,
+    description: 'Allows Charizard to Mega Evolve into Mega Charizard X during battle',
+    price: 10000,
+    icon: '💎',
+    effect: {
+      type: 'mega_stone',
+      pokemon: 'charizard',
+      mega_form: 'charizard-mega-x',
+      stat_changes: {
+        hp: 0,
+        attack: 40,
+        defense: 21,
+        special_attack: 0,
+        special_defense: 10,
+        speed: 0,
+      },
+      type_change: ['fire', 'dragon'],
+      ability: 'Tough Claws',
+    },
+    available: true, // ✅ Available for testing
+  },
+  {
+    id: 'charizardite_y',
+    name: 'Charizardite Y',
+    category: ITEM_CATEGORIES.MEGA_STONES,
+    rarity: ITEM_RARITY.LEGENDARY,
+    description: 'Allows Charizard to Mega Evolve into Mega Charizard Y during battle',
+    price: 10000,
+    icon: '💎',
+    effect: {
+      type: 'mega_stone',
+      pokemon: 'charizard',
+      mega_form: 'charizard-mega-y',
+      stat_changes: {
+        hp: 0,
+        attack: 0,
+        defense: 18,
+        special_attack: 50,
+        special_defense: 15,
+        speed: 0,
+      },
+      type_change: ['fire', 'flying'],
+      ability: 'Drought',
+    },
+    available: true, // ✅ Available for testing
   },
 ];
 
@@ -559,6 +613,7 @@ const ALL_ITEMS = [
   ...EVOLUTION_ITEMS,
   ...HELD_ITEMS,
   ...BERRY_ITEMS,
+  ...MEGA_STONE_ITEMS,
 ];
 
 /**

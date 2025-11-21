@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { Card } from "./ui";
 import { useState, useEffect, useMemo } from "react";
-import { generateRandomRewards } from "../utils/rewards";
+import { generateRandomRewards, getTierConfig, REWARD_TIERS } from "../utils/rewards";
 import { useRecoilValue } from "recoil";
 import { floorState } from "../recoil/atoms/floor";
 
@@ -136,82 +136,150 @@ export default function RewardScreen({ setPendingReward, onApplyReward }) {
 
           {/* Reward Options */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10">
-            {rewards.map((reward, index) => (
-              <motion.div
-                key={reward.id}
-                initial={{ opacity: 0, scale: 0.5, rotateY: 180 }}
-                animate={{ opacity: 1, scale: 1, rotateY: 0 }}
-                transition={{
-                  delay: 0.5 + index * 0.15,
-                  type: "spring",
-                  stiffness: 200,
-                }}
-                whileHover={{ scale: 1.05, y: -10 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <button
-                  onClick={reward.onClick}
-                  className={`w-full bg-gradient-to-br ${reward.color} rounded-xl p-6 text-white transition-all duration-300 border-2 ${reward.borderColor} relative overflow-hidden group`}
-                  style={{
-                    boxShadow: `0 0 30px ${reward.glowColor}`,
+            {rewards.map((reward, index) => {
+              const tierConfig = getTierConfig(reward.tier);
+              const isEpicOrLegendary = reward.tier === REWARD_TIERS.EPIC || reward.tier === REWARD_TIERS.LEGENDARY;
+              const isLegendary = reward.tier === REWARD_TIERS.LEGENDARY;
+
+              return (
+                <motion.div
+                  key={reward.id}
+                  initial={{ opacity: 0, scale: 0.5, rotateY: 180 }}
+                  animate={{ opacity: 1, scale: 1, rotateY: 0 }}
+                  transition={{
+                    delay: 0.5 + index * 0.15,
+                    type: "spring",
+                    stiffness: 200,
                   }}
+                  whileHover={{ scale: 1.05, y: -10 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="relative"
                 >
-                  {/* Rarity Badge */}
-                  <div className="absolute top-2 right-2">
-                    <span className="text-xs px-2 py-1 bg-black/30 rounded-full font-bold uppercase">
-                      {reward.rarity}
-                    </span>
-                  </div>
+                  {/* Epic/Legendary Glow Ring */}
+                  {isEpicOrLegendary && (
+                    <motion.div
+                      className="absolute -inset-1 rounded-xl z-0"
+                      style={{
+                        background: isLegendary
+                          ? 'linear-gradient(45deg, #fbbf24, #f59e0b, #fbbf24, #fcd34d, #fbbf24)'
+                          : 'linear-gradient(45deg, #a855f7, #7c3aed, #a855f7, #c084fc, #a855f7)',
+                        backgroundSize: '300% 300%',
+                      }}
+                      animate={{
+                        backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
+                      }}
+                      transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                    />
+                  )}
 
-                  {/* Shimmer Effect */}
-                  <motion.div
-                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
-                    initial={{ x: '-100%' }}
-                    animate={{ x: '200%' }}
-                    transition={{
-                      duration: 2,
-                      repeat: Infinity,
-                      delay: index * 0.3,
-                      ease: "linear",
-                    }}
-                  />
-
-                  {/* Icon */}
-                  <motion.div
-                    className="text-7xl mb-4"
-                    animate={{
-                      rotate: [0, 5, -5, 0],
-                      scale: [1, 1.1, 1],
-                    }}
-                    transition={{
-                      duration: 3,
-                      repeat: Infinity,
-                      delay: index * 0.2,
+                  <button
+                    onClick={reward.onClick}
+                    className={`relative w-full bg-gradient-to-br ${reward.color} rounded-xl p-6 text-white transition-all duration-300 border-2 ${reward.borderColor} overflow-hidden group z-10`}
+                    style={{
+                      boxShadow: `0 0 ${isLegendary ? '40px' : isEpicOrLegendary ? '30px' : '20px'} ${reward.glowColor}`,
                     }}
                   >
-                    {reward.icon}
-                  </motion.div>
+                    {/* Tier Badge */}
+                    <div className="absolute top-2 right-2">
+                      <motion.span
+                        className={`text-xs px-2 py-1 rounded-full font-bold uppercase ${tierConfig.textColor}`}
+                        style={{
+                          backgroundColor: isLegendary ? 'rgba(251, 191, 36, 0.3)' :
+                            reward.tier === REWARD_TIERS.EPIC ? 'rgba(168, 85, 247, 0.3)' :
+                            reward.tier === REWARD_TIERS.RARE ? 'rgba(59, 130, 246, 0.3)' :
+                            reward.tier === REWARD_TIERS.UNCOMMON ? 'rgba(74, 222, 128, 0.3)' :
+                            'rgba(156, 163, 175, 0.3)',
+                          border: `1px solid ${isLegendary ? 'rgba(251, 191, 36, 0.5)' :
+                            reward.tier === REWARD_TIERS.EPIC ? 'rgba(168, 85, 247, 0.5)' :
+                            reward.tier === REWARD_TIERS.RARE ? 'rgba(59, 130, 246, 0.5)' :
+                            reward.tier === REWARD_TIERS.UNCOMMON ? 'rgba(74, 222, 128, 0.5)' :
+                            'rgba(156, 163, 175, 0.5)'}`,
+                        }}
+                        animate={isLegendary ? {
+                          scale: [1, 1.05, 1],
+                          boxShadow: ['0 0 5px rgba(251,191,36,0.5)', '0 0 15px rgba(251,191,36,0.8)', '0 0 5px rgba(251,191,36,0.5)'],
+                        } : {}}
+                        transition={{ duration: 1.5, repeat: Infinity }}
+                      >
+                        {tierConfig.label}
+                      </motion.span>
+                    </div>
 
-                  {/* Title */}
-                  <h3 className="text-2xl font-bold mb-2 relative z-10">
-                    {reward.title}
-                  </h3>
+                    {/* Shimmer Effect - faster for legendary */}
+                    <motion.div
+                      className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+                      initial={{ x: '-100%' }}
+                      animate={{ x: '200%' }}
+                      transition={{
+                        duration: isLegendary ? 1.2 : 2,
+                        repeat: Infinity,
+                        delay: index * 0.3,
+                        ease: "linear",
+                      }}
+                    />
 
-                  {/* Description */}
-                  <p className="text-white/90 text-sm relative z-10">
-                    {reward.description}
-                  </p>
+                    {/* Legendary Sparkles */}
+                    {isLegendary && (
+                      <>
+                        {[...Array(5)].map((_, i) => (
+                          <motion.div
+                            key={i}
+                            className="absolute w-1 h-1 bg-yellow-300 rounded-full"
+                            style={{
+                              left: `${20 + i * 15}%`,
+                              top: `${30 + (i % 3) * 20}%`,
+                            }}
+                            animate={{
+                              scale: [0, 1, 0],
+                              opacity: [0, 1, 0],
+                            }}
+                            transition={{
+                              duration: 1.5,
+                              repeat: Infinity,
+                              delay: i * 0.3,
+                            }}
+                          />
+                        ))}
+                      </>
+                    )}
 
-                  {/* Hover Glow */}
-                  <motion.div
-                    className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                    style={{
-                      background: `radial-gradient(circle at center, ${reward.glowColor}, transparent 70%)`,
-                    }}
-                  />
-                </button>
-              </motion.div>
-            ))}
+                    {/* Icon */}
+                    <motion.div
+                      className="text-7xl mb-4"
+                      animate={{
+                        rotate: [0, 5, -5, 0],
+                        scale: [1, 1.1, 1],
+                      }}
+                      transition={{
+                        duration: isLegendary ? 2 : 3,
+                        repeat: Infinity,
+                        delay: index * 0.2,
+                      }}
+                    >
+                      {reward.icon}
+                    </motion.div>
+
+                    {/* Title */}
+                    <h3 className={`text-2xl font-bold mb-2 relative z-10 ${isLegendary ? 'text-yellow-100' : ''}`}>
+                      {reward.title}
+                    </h3>
+
+                    {/* Description */}
+                    <p className="text-white/90 text-sm relative z-10">
+                      {reward.description}
+                    </p>
+
+                    {/* Hover Glow */}
+                    <motion.div
+                      className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                      style={{
+                        background: `radial-gradient(circle at center, ${reward.glowColor}, transparent 70%)`,
+                      }}
+                    />
+                  </button>
+                </motion.div>
+              );
+            })}
           </div>
 
           {/* Footer Tip */}

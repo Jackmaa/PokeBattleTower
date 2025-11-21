@@ -18,5 +18,9 @@ export const currencyState = atom({
  */
 export const inventoryState = atom({
   key: 'inventoryState',
-  default: {},
+  default: {
+    // Starting items for testing
+    'charizardite_x': 1, // For testing Mega Evolution
+    'potion': 3, // Some potions to start with
+  },
 });
