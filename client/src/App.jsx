@@ -1,21 +1,33 @@
-import React from "react";
+import React, { useEffect } from "react";
 import StarterScreen from "./pages/StarterScreen";
 import FloorScreen from "./pages/FloorScreen";
 import TowerMapScreen from "./pages/TowerMapScreen";
 import RestScreen from "./pages/RestScreen";
 import ShopScreen from "./pages/ShopScreen";
+import EquipScreen from "./pages/EquipScreen";
+import EventScreen from "./pages/EventScreen";
+import GameOverScreen from "./components/GameOverScreen";
 import { useRecoilState } from "recoil";
 import { gameStartedState, gameViewState } from "./recoil/atoms/game";
 import { towerMapState, currentNodeState } from "./recoil/atoms/towerMap";
-import { updateMapAvailability } from "./utils/towerMap";
+import { updateMapAvailability, getNodeById } from "./utils/towerMap";
 import { AnimatePresence } from "framer-motion";
 import { PageTransition } from "./components/ui";
+import { initializeTheme } from "./utils/themeManager";
+
+// Total floors in the tower (final boss is at floor totalFloors - 1)
+const TOTAL_FLOORS = 20;
 
 function App() {
   const [started, setStarted] = useRecoilState(gameStartedState);
   const [gameView, setGameView] = useRecoilState(gameViewState);
   const [towerMap, setTowerMap] = useRecoilState(towerMapState);
   const [currentNodeId, setCurrentNodeId] = useRecoilState(currentNodeState);
+
+  // Initialize theme on app load
+  useEffect(() => {
+    initializeTheme();
+  }, []);
 
   const handleStartGame = () => {
     setStarted(true);
@@ -41,15 +53,25 @@ function App() {
     } else if (node.type === 'heal') {
       setGameView('rest');
     } else if (node.type === 'event') {
-      // TODO: Navigate to event screen
-      console.log('Event not implemented yet');
-      setGameView('map'); // Return to map for now
+      setGameView('event');
     }
   };
 
   const handleFloorComplete = () => {
-    // After completing a floor, return to map
-    setGameView('map');
+    // Check if this was the final boss (floor 19 = TOTAL_FLOORS - 1)
+    const currentNode = getNodeById(towerMap, currentNodeId);
+    const isFinalBoss = currentNode &&
+      currentNode.type === 'boss' &&
+      currentNode.floor >= TOTAL_FLOORS - 1;
+
+    if (isFinalBoss) {
+      // Player beat the final boss - show victory screen!
+      console.log('[App] Final boss defeated! Showing victory screen');
+      setGameView('victory');
+    } else {
+      // After completing a floor, return to map
+      setGameView('map');
+    }
   };
 
   const handleRestComplete = () => {
@@ -62,20 +84,49 @@ function App() {
     setGameView('map');
   };
 
+  const handleEquipComplete = () => {
+    // After equipping items, return to map
+    setGameView('map');
+  };
+
+  const handleEventComplete = () => {
+    // After event, return to map
+    setGameView('map');
+  };
+
   return (
-    <div className="App min-h-screen relative overflow-hidden">
-      {/* Animated Background */}
+    <div className="App min-h-screen relative">
+      {/* Animated Background - Uses CSS variables from theme */}
       <div className="fixed inset-0 -z-10">
         {/* Gradient Background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900" />
+        <div
+          className="absolute inset-0 transition-colors duration-500"
+          style={{
+            background: `linear-gradient(to bottom right, var(--gradient-from), var(--gradient-via), var(--gradient-to))`
+          }}
+        />
 
-        {/* Animated Orbs */}
-        <div className="absolute top-20 left-20 w-96 h-96 bg-purple-500/30 rounded-full blur-3xl animate-pulse-slow" />
-        <div className="absolute bottom-20 right-20 w-96 h-96 bg-blue-500/30 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '1s' }} />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '2s' }} />
+        {/* Animated Orbs - Use theme colors */}
+        <div
+          className="absolute top-20 left-20 w-96 h-96 rounded-full blur-3xl animate-pulse-slow transition-colors duration-500"
+          style={{ backgroundColor: 'var(--orb-1)' }}
+        />
+        <div
+          className="absolute bottom-20 right-20 w-96 h-96 rounded-full blur-3xl animate-pulse-slow transition-colors duration-500"
+          style={{ backgroundColor: 'var(--orb-2)', animationDelay: '1s' }}
+        />
+        <div
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full blur-3xl animate-pulse-slow transition-colors duration-500"
+          style={{ backgroundColor: 'var(--orb-3)', animationDelay: '2s' }}
+        />
 
         {/* Grid Pattern Overlay */}
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(99,102,241,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(99,102,241,0.05)_1px,transparent_1px)] bg-[size:50px_50px]" />
+        <div
+          className="absolute inset-0 bg-[size:50px_50px]"
+          style={{
+            backgroundImage: `linear-gradient(var(--border-secondary) 1px, transparent 1px), linear-gradient(90deg, var(--border-secondary) 1px, transparent 1px)`
+          }}
+        />
 
         {/* Vignette Effect */}
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.4)_100%)]" />
@@ -101,6 +152,18 @@ function App() {
         ) : gameView === 'shop' ? (
           <PageTransition key="shop" variant="fade">
             <ShopScreen onComplete={handleShopComplete} />
+          </PageTransition>
+        ) : gameView === 'equip' ? (
+          <PageTransition key="equip" variant="fade">
+            <EquipScreen onComplete={handleEquipComplete} />
+          </PageTransition>
+        ) : gameView === 'event' ? (
+          <PageTransition key="event" variant="fade">
+            <EventScreen onComplete={handleEventComplete} />
+          </PageTransition>
+        ) : gameView === 'victory' ? (
+          <PageTransition key="victory" variant="fade">
+            <GameOverScreen isVictory={true} />
           </PageTransition>
         ) : (
           <div key="unknown" className="min-h-screen flex items-center justify-center text-white text-2xl">
