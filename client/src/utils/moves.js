@@ -19,6 +19,9 @@ export const EFFECT_TYPES = {
   STAT_CHANGE: 'stat_change',
   HEAL: 'heal',
   PROTECT: 'protect',
+  RECOIL: 'recoil',
+  TEAM_BUFF: 'team_buff',
+  FLINCH: 'flinch',
 };
 
 export const moves = {
@@ -834,9 +837,389 @@ export const moves = {
     effect: { type: 'heal', percent: 25 },
     description: "Scatters water to restore HP for all allies.",
   },
+
+  // ============================================
+  // NEW MOVES - AOE
+  // ============================================
+  discharge: {
+    name: "Discharge",
+    type: "electric",
+    power: 80,
+    accuracy: 100,
+    pp: 15,
+    maxPP: 15,
+    category: "special",
+    target: TARGET_TYPES.ALL_OTHER,
+    priority: 0,
+    effect: { type: 'status', status: 'paralyzed', chance: 30 },
+    description: "A flare of electricity strikes all surrounding Pokémon. May cause paralysis.",
+  },
+  sludgeWave: {
+    name: "Sludge Wave",
+    type: "poison",
+    power: 95,
+    accuracy: 100,
+    pp: 10,
+    maxPP: 10,
+    category: "special",
+    target: TARGET_TYPES.ALL_OTHER,
+    priority: 0,
+    effect: { type: 'status', status: 'poisoned', chance: 10 },
+    description: "A sludge wave swamps the area. May poison.",
+  },
+  dazzlingGleam: {
+    name: "Dazzling Gleam",
+    type: "fairy",
+    power: 80,
+    accuracy: 100,
+    pp: 10,
+    maxPP: 10,
+    category: "special",
+    target: TARGET_TYPES.ALL_ENEMIES,
+    priority: 0,
+    description: "The user damages opposing Pokémon by emitting a powerful flash.",
+  },
+
+  // ============================================
+  // NEW MOVES - SUPPORT / TEAM BUFF
+  // ============================================
+  lightScreen: {
+    name: "Light Screen",
+    type: "psychic",
+    power: 0,
+    accuracy: 100,
+    pp: 30,
+    maxPP: 30,
+    category: "status",
+    target: TARGET_TYPES.ALL_ALLIES,
+    priority: 0,
+    effect: { type: 'team_buff', buff: 'light_screen', duration: 3, reduction: 0.5 },
+    description: "A wondrous wall of light is put up to reduce special damage for 3 turns.",
+  },
+  reflect: {
+    name: "Reflect",
+    type: "psychic",
+    power: 0,
+    accuracy: 100,
+    pp: 30,
+    maxPP: 30,
+    category: "status",
+    target: TARGET_TYPES.ALL_ALLIES,
+    priority: 0,
+    effect: { type: 'team_buff', buff: 'reflect', duration: 3, reduction: 0.5 },
+    description: "A wondrous wall of light is put up to reduce physical damage for 3 turns.",
+  },
+  tailwind: {
+    name: "Tailwind",
+    type: "flying",
+    power: 0,
+    accuracy: 100,
+    pp: 15,
+    maxPP: 15,
+    category: "status",
+    target: TARGET_TYPES.ALL_ALLIES,
+    priority: 0,
+    effect: { type: 'team_buff', buff: 'tailwind', duration: 3, speedBoost: 2.0 },
+    description: "The user whips up a turbulent whirlwind that raises the Speed of all party Pokémon for 3 turns.",
+  },
+  wideGuard: {
+    name: "Wide Guard",
+    type: "rock",
+    power: 0,
+    accuracy: 100,
+    pp: 10,
+    maxPP: 10,
+    category: "status",
+    target: TARGET_TYPES.ALL_ALLIES,
+    priority: 3,
+    effect: { type: 'team_buff', buff: 'wide_guard', duration: 1 },
+    description: "The user and its allies are protected from wide-ranging attacks for one turn.",
+  },
+
+  // ============================================
+  // NEW MOVES - PRIORITY
+  // ============================================
+  extremeSpeed: {
+    name: "Extreme Speed",
+    type: "normal",
+    power: 80,
+    accuracy: 100,
+    pp: 5,
+    maxPP: 5,
+    category: "physical",
+    target: TARGET_TYPES.SINGLE_ENEMY,
+    priority: 2,
+    description: "The user charges at blinding speed. This move always goes first.",
+  },
+  fakeOut: {
+    name: "Fake Out",
+    type: "normal",
+    power: 40,
+    accuracy: 100,
+    pp: 10,
+    maxPP: 10,
+    category: "physical",
+    target: TARGET_TYPES.SINGLE_ENEMY,
+    priority: 3,
+    effect: { type: 'flinch', chance: 100, firstTurnOnly: true },
+    description: "An attack that hits first and makes the target flinch. Only works on the first turn.",
+  },
+
+  // ============================================
+  // NEW MOVES - RECOIL
+  // ============================================
+  doubleEdge: {
+    name: "Double-Edge",
+    type: "normal",
+    power: 120,
+    accuracy: 100,
+    pp: 15,
+    maxPP: 15,
+    category: "physical",
+    target: TARGET_TYPES.SINGLE_ENEMY,
+    priority: 0,
+    effect: { type: 'recoil', percent: 33 },
+    description: "A reckless, life-risking tackle. The user also takes 1/3 of damage dealt.",
+  },
+  flareBlitz: {
+    name: "Flare Blitz",
+    type: "fire",
+    power: 120,
+    accuracy: 100,
+    pp: 15,
+    maxPP: 15,
+    category: "physical",
+    target: TARGET_TYPES.SINGLE_ENEMY,
+    priority: 0,
+    effect: { type: 'recoil', percent: 33, secondaryEffect: { type: 'status', status: 'burned', chance: 10 } },
+    description: "The user cloaks itself in fire and charges. The user also takes 1/3 recoil and may burn the target.",
+  },
+  headSmash: {
+    name: "Head Smash",
+    type: "rock",
+    power: 150,
+    accuracy: 80,
+    pp: 5,
+    maxPP: 5,
+    category: "physical",
+    target: TARGET_TYPES.SINGLE_ENEMY,
+    priority: 0,
+    effect: { type: 'recoil', percent: 50 },
+    description: "The user attacks with a hazardous full-power headbutt. The user takes half the damage dealt.",
+  },
+  wildCharge: {
+    name: "Wild Charge",
+    type: "electric",
+    power: 90,
+    accuracy: 100,
+    pp: 15,
+    maxPP: 15,
+    category: "physical",
+    target: TARGET_TYPES.SINGLE_ENEMY,
+    priority: 0,
+    effect: { type: 'recoil', percent: 25 },
+    description: "The user shrouds itself in electricity and smashes into the target. The user takes 1/4 recoil.",
+  },
+  woodHammer: {
+    name: "Wood Hammer",
+    type: "grass",
+    power: 120,
+    accuracy: 100,
+    pp: 15,
+    maxPP: 15,
+    category: "physical",
+    target: TARGET_TYPES.SINGLE_ENEMY,
+    priority: 0,
+    effect: { type: 'recoil', percent: 33 },
+    description: "The user slams its rugged body into the target. The user also takes 1/3 recoil.",
+  },
+
+  // ============================================
+  // NEW MOVES - FAIRY TYPE
+  // ============================================
+  moonblast: {
+    name: "Moonblast",
+    type: "fairy",
+    power: 95,
+    accuracy: 100,
+    pp: 15,
+    maxPP: 15,
+    category: "special",
+    target: TARGET_TYPES.SINGLE_ENEMY,
+    priority: 0,
+    effect: { type: 'stat_change', stat: 'special_attack', stages: -1, chance: 30 },
+    description: "Borrowing the power of the moon, the user attacks. May lower Sp. Atk.",
+  },
+  playRough: {
+    name: "Play Rough",
+    type: "fairy",
+    power: 90,
+    accuracy: 90,
+    pp: 10,
+    maxPP: 10,
+    category: "physical",
+    target: TARGET_TYPES.SINGLE_ENEMY,
+    priority: 0,
+    effect: { type: 'stat_change', stat: 'attack', stages: -1, chance: 10 },
+    description: "The user plays rough with the target. May lower Attack.",
+  },
+
+  // ============================================
+  // NEW MOVES - ADDITIONAL USEFUL MOVES
+  // ============================================
+  dragonPulse: {
+    name: "Dragon Pulse",
+    type: "dragon",
+    power: 85,
+    accuracy: 100,
+    pp: 10,
+    maxPP: 10,
+    category: "special",
+    target: TARGET_TYPES.SINGLE_ENEMY,
+    priority: 0,
+    description: "The target is attacked with a shock wave generated by the user's gaping mouth.",
+  },
+  energyBall: {
+    name: "Energy Ball",
+    type: "grass",
+    power: 90,
+    accuracy: 100,
+    pp: 10,
+    maxPP: 10,
+    category: "special",
+    target: TARGET_TYPES.SINGLE_ENEMY,
+    priority: 0,
+    effect: { type: 'stat_change', stat: 'special_defense', stages: -1, chance: 10 },
+    description: "The user draws power from nature and fires it. May lower Sp. Def.",
+  },
+  aurasphere: {
+    name: "Aura Sphere",
+    type: "fighting",
+    power: 80,
+    accuracy: 100, // Never misses in games, we keep 100
+    pp: 20,
+    maxPP: 20,
+    category: "special",
+    target: TARGET_TYPES.SINGLE_ENEMY,
+    priority: 0,
+    description: "The user lets loose a blast of aura power. This attack never misses.",
+  },
+  darkPulse: {
+    name: "Dark Pulse",
+    type: "dark",
+    power: 80,
+    accuracy: 100,
+    pp: 15,
+    maxPP: 15,
+    category: "special",
+    target: TARGET_TYPES.SINGLE_ENEMY,
+    priority: 0,
+    effect: { type: 'flinch', chance: 20 },
+    description: "The user releases a horrible aura imbued with dark thoughts. May cause flinching.",
+  },
+  scald: {
+    name: "Scald",
+    type: "water",
+    power: 80,
+    accuracy: 100,
+    pp: 15,
+    maxPP: 15,
+    category: "special",
+    target: TARGET_TYPES.SINGLE_ENEMY,
+    priority: 0,
+    effect: { type: 'status', status: 'burned', chance: 30 },
+    description: "The user shoots boiling hot water. May also burn the target.",
+  },
+  earthPower: {
+    name: "Earth Power",
+    type: "ground",
+    power: 90,
+    accuracy: 100,
+    pp: 10,
+    maxPP: 10,
+    category: "special",
+    target: TARGET_TYPES.SINGLE_ENEMY,
+    priority: 0,
+    effect: { type: 'stat_change', stat: 'special_defense', stages: -1, chance: 10 },
+    description: "The user makes the ground erupt with power. May lower Sp. Def.",
+  },
+  ironHead: {
+    name: "Iron Head",
+    type: "steel",
+    power: 80,
+    accuracy: 100,
+    pp: 15,
+    maxPP: 15,
+    category: "physical",
+    target: TARGET_TYPES.SINGLE_ENEMY,
+    priority: 0,
+    effect: { type: 'flinch', chance: 30 },
+    description: "The user slams the target with its steel-hard head. May cause flinching.",
+  },
+  xScissor: {
+    name: "X-Scissor",
+    type: "bug",
+    power: 80,
+    accuracy: 100,
+    pp: 15,
+    maxPP: 15,
+    category: "physical",
+    target: TARGET_TYPES.SINGLE_ENEMY,
+    priority: 0,
+    description: "The user slashes at the target by crossing its scythes or claws as if they were scissors.",
+  },
+  poisonJab: {
+    name: "Poison Jab",
+    type: "poison",
+    power: 80,
+    accuracy: 100,
+    pp: 20,
+    maxPP: 20,
+    category: "physical",
+    target: TARGET_TYPES.SINGLE_ENEMY,
+    priority: 0,
+    effect: { type: 'status', status: 'poisoned', chance: 30 },
+    description: "The target is stabbed with a tentacle or arm steeped in poison. May also poison.",
+  },
 };
 
-// Get moves for a Pokemon based on its type
+// Extended move pools for each type (includes new moves)
+export const TYPE_MOVE_POOLS = {
+  fire: ["ember", "flamethrower", "fireBlast", "heatWave", "flareBlitz"],
+  water: ["waterGun", "surf", "hydroPump", "aquaJet", "scald", "lifeDew"],
+  grass: ["vineWhip", "razorLeaf", "solarBeam", "synthesis", "energyBall", "woodHammer"],
+  electric: ["thunderShock", "thunderbolt", "thunder", "thunderWave", "discharge", "wildCharge"],
+  ice: ["powderSnow", "iceBeam", "blizzard", "iceShard"],
+  fighting: ["karateChop", "brickBreak", "closeCombat", "machPunch", "aurasphere"],
+  psychic: ["confusion", "psychic", "calmMind", "healPulse", "lightScreen", "reflect"],
+  dragon: ["dragonBreath", "dragonClaw", "dracoMeteor", "dragonPulse"],
+  normal: ["tackle", "scratch", "bodySlam", "hyperBeam", "quickAttack", "extremeSpeed", "doubleEdge", "fakeOut", "protect", "swordssDance"],
+  ground: ["earthquake", "dig", "earthPower"],
+  poison: ["poisonSting", "sludgeBomb", "toxic", "sludgeWave", "poisonJab"],
+  dark: ["bite", "crunch", "suckerpunch", "darkPulse"],
+  ghost: ["shadowBall", "shadowSneak"],
+  steel: ["ironTail", "flashCannon", "bulletPunch", "ironHead"],
+  rock: ["rockSlide", "stoneEdge", "headSmash", "wideGuard"],
+  flying: ["airSlash", "bravebird", "tailwind"],
+  fairy: ["dazzlingGleam", "moonblast", "playRough"],
+  bug: ["xScissor"],
+};
+
+/**
+ * Get a move by its ID
+ * @param {string} moveId - The move ID (e.g., "flamethrower")
+ * @returns {Object|null} - The move object with id, or null if not found
+ */
+export function getMoveById(moveId) {
+  const move = moves[moveId];
+  if (!move) return null;
+  return {
+    id: moveId,
+    ...move,
+  };
+}
+
+// Get moves for a Pokemon based on its type (starter set)
 export function getMovesByType(pokemonType) {
   const typeMoveSets = {
     fire: ["ember", "flamethrower", "tackle", "bodySlam"],
@@ -848,6 +1231,15 @@ export function getMovesByType(pokemonType) {
     psychic: ["confusion", "psychic", "tackle", "scratch"],
     dragon: ["dragonBreath", "dragonClaw", "tackle", "scratch"],
     normal: ["tackle", "scratch", "bodySlam", "hyperBeam"],
+    ground: ["dig", "earthquake", "tackle", "scratch"],
+    poison: ["poisonSting", "sludgeBomb", "tackle", "scratch"],
+    dark: ["bite", "crunch", "tackle", "scratch"],
+    ghost: ["shadowBall", "shadowSneak", "tackle", "scratch"],
+    steel: ["ironTail", "flashCannon", "tackle", "scratch"],
+    rock: ["rockSlide", "stoneEdge", "tackle", "scratch"],
+    flying: ["airSlash", "bravebird", "tackle", "scratch"],
+    fairy: ["dazzlingGleam", "moonblast", "tackle", "scratch"],
+    bug: ["xScissor", "tackle", "scratch", "bodySlam"],
   };
 
   const moveKeys = typeMoveSets[pokemonType?.toLowerCase()] || typeMoveSets.normal;
@@ -870,4 +1262,76 @@ export function generatePokemonMoves(pokemon) {
     ...move,
     pp: move.maxPP, // Start with full PP
   }));
+}
+
+/**
+ * Get learnable moves for a Pokemon based on its types
+ * These are moves the Pokemon can learn during a run (level-up or Move Tutor)
+ * Returns moves the Pokemon doesn't already know
+ */
+export function getLearnableMoves(pokemon, count = 3) {
+  const currentMoveIds = pokemon.moves?.map(m => m.id) || [];
+  const pokemonTypes = pokemon.types?.map(t => t.toLowerCase()) || ['normal'];
+
+  // Collect all possible moves from Pokemon's types + normal moves
+  const possibleMoveKeys = new Set();
+
+  for (const type of pokemonTypes) {
+    const pool = TYPE_MOVE_POOLS[type] || [];
+    pool.forEach(key => possibleMoveKeys.add(key));
+  }
+
+  // Add some universal moves that any Pokemon can learn
+  const universalMoves = ['protect', 'tackle', 'bodySlam', 'quickAttack'];
+  universalMoves.forEach(key => possibleMoveKeys.add(key));
+
+  // Filter out moves the Pokemon already knows
+  const learnableMoveKeys = [...possibleMoveKeys].filter(key =>
+    !currentMoveIds.includes(key) && moves[key]
+  );
+
+  // Shuffle and pick random moves
+  const shuffled = learnableMoveKeys.sort(() => Math.random() - 0.5);
+  const selectedKeys = shuffled.slice(0, count);
+
+  return selectedKeys.map(key => ({
+    id: key,
+    ...moves[key],
+  }));
+}
+
+/**
+ * Get a single random learnable move for level-up
+ * Biased towards moves matching the Pokemon's primary type
+ */
+export function getRandomLearnableMove(pokemon) {
+  const currentMoveIds = pokemon.moves?.map(m => m.id) || [];
+  const primaryType = pokemon.types?.[0]?.toLowerCase() || 'normal';
+  const secondaryType = pokemon.types?.[1]?.toLowerCase();
+
+  // 60% chance for primary type move, 25% for secondary type (if exists), 15% for any move
+  const rand = Math.random();
+  let targetPool;
+
+  if (rand < 0.6) {
+    targetPool = TYPE_MOVE_POOLS[primaryType] || TYPE_MOVE_POOLS.normal;
+  } else if (rand < 0.85 && secondaryType) {
+    targetPool = TYPE_MOVE_POOLS[secondaryType] || TYPE_MOVE_POOLS.normal;
+  } else {
+    // Pick from all moves
+    targetPool = Object.keys(moves);
+  }
+
+  // Filter out known moves
+  const learnableMoves = targetPool.filter(key =>
+    !currentMoveIds.includes(key) && moves[key]
+  );
+
+  if (learnableMoves.length === 0) return null;
+
+  const randomKey = learnableMoves[Math.floor(Math.random() * learnableMoves.length)];
+  return {
+    id: randomKey,
+    ...moves[randomKey],
+  };
 }

@@ -1,6 +1,11 @@
 // 📁 pokemonLeveling.js
 // Pokemon XP and Leveling system
 
+import { getRandomLearnableMove } from './moves';
+
+// Chance to learn a new move on level up (20%)
+const MOVE_LEARN_CHANCE = 0.20;
+
 /**
  * XP required for each level (cumulative)
  * Uses a polynomial curve: level^2 * 10
@@ -109,6 +114,7 @@ export function addXPToPokemon(pokemon, xpGained) {
   // Calculate new stats if leveled up
   let newStats = { ...pokemon.stats };
   let statGains = {};
+  let pendingMoveLearn = null;
 
   if (leveledUp) {
     // Calculate stat gains
@@ -126,6 +132,15 @@ export function addXPToPokemon(pokemon, xpGained) {
         } else {
           newStats[stat] = newStats[stat] + gain;
         }
+      }
+    }
+
+    // Check for move learning opportunity (20% chance per level gained)
+    // Only trigger once even if multiple levels gained
+    if (Math.random() < MOVE_LEARN_CHANCE * levelsGained) {
+      const newMove = getRandomLearnableMove(pokemon);
+      if (newMove) {
+        pendingMoveLearn = newMove;
       }
     }
   }
@@ -146,6 +161,7 @@ export function addXPToPokemon(pokemon, xpGained) {
     xpGained,
     totalXP: currentXP,
     statGains,
+    pendingMoveLearn, // New move to potentially learn
   };
 }
 
@@ -179,9 +195,11 @@ export function distributeXPToTeam(team, defeatedEnemies, floor, distribution = 
     xpPerPokemon,
     levelUps: [],
     updatedTeam: [],
+    pendingMoveLearn: [], // Array of { pokemonIndex, pokemon, newMove }
   };
 
-  for (const pokemon of team) {
+  for (let i = 0; i < team.length; i++) {
+    const pokemon = team[i];
     // In 'equal' mode, all get XP. In 'participants' mode, only alive Pokemon
     const getsXP = distribution === 'equal' || pokemon.stats.hp > 0;
 
@@ -196,6 +214,15 @@ export function distributeXPToTeam(team, defeatedEnemies, floor, distribution = 
           newLevel: result.newLevel,
           statGains: result.statGains,
         });
+
+        // Check for pending move learn
+        if (result.pendingMoveLearn) {
+          results.pendingMoveLearn.push({
+            pokemonIndex: i,
+            pokemon: result.pokemon,
+            newMove: result.pendingMoveLearn,
+          });
+        }
       }
     } else {
       results.updatedTeam.push(pokemon);
