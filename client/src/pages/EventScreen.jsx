@@ -17,6 +17,7 @@ import { getRandomPokemon } from '../utils/getRandomPokemon';
 import { getRandomRelic, RELIC_TIERS } from '../utils/relics';
 import { getItemById } from '../utils/items';
 import { useAudio } from '../hooks/useAudio';
+import { discoverRelic } from '../utils/metaProgression';
 
 export default function EventScreen({ onComplete }) {
   const [team, setTeam] = useRecoilState(teamState);
@@ -145,6 +146,9 @@ export default function EventScreen({ onComplete }) {
           setRelics(prev => [...prev, relic]);
           setNewRelic(relic);
           playLevelUpSound();
+
+          // Persist relic discovery to localStorage
+          discoverRelic(relic.id);
         }
         messages.push(outcome.message);
         break;

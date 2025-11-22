@@ -412,6 +412,58 @@ export const REWARD_POOL = {
     },
   ],
 
+  // RELIC REWARDS - Permanent collectibles
+  relics: [
+    {
+      id: 'relic-common',
+      type: 'relic',
+      tier: REWARD_TIERS.UNCOMMON,
+      relicTier: 'common',
+      icon: '🎁',
+      title: 'Common Relic',
+      description: 'Obtain a random common relic',
+      color: 'from-gray-500 to-gray-400',
+      borderColor: 'border-gray-400',
+      glowColor: 'rgba(156, 163, 175, 0.6)',
+    },
+    {
+      id: 'relic-uncommon',
+      type: 'relic',
+      tier: REWARD_TIERS.RARE,
+      relicTier: 'uncommon',
+      icon: '🎁',
+      title: 'Uncommon Relic',
+      description: 'Obtain a random uncommon relic',
+      color: 'from-green-500 to-emerald-400',
+      borderColor: 'border-emerald-400',
+      glowColor: 'rgba(52, 211, 153, 0.7)',
+    },
+    {
+      id: 'relic-rare',
+      type: 'relic',
+      tier: REWARD_TIERS.EPIC,
+      relicTier: 'rare',
+      icon: '💎',
+      title: 'Rare Relic',
+      description: 'Obtain a random rare relic',
+      color: 'from-blue-500 to-cyan-400',
+      borderColor: 'border-cyan-400',
+      glowColor: 'rgba(34, 211, 238, 0.8)',
+    },
+    {
+      id: 'relic-legendary',
+      type: 'relic',
+      tier: REWARD_TIERS.LEGENDARY,
+      relicTier: 'legendary',
+      icon: '👑',
+      title: 'Legendary Relic',
+      description: 'Obtain a legendary relic!',
+      color: 'from-yellow-400 to-amber-300',
+      borderColor: 'border-yellow-300',
+      glowColor: 'rgba(253, 224, 71, 0.9)',
+    },
+  ],
+
   // SPECIAL REWARDS
   special: [
     {
@@ -498,6 +550,7 @@ export function generateRandomRewards(count = 3, floorLevel = 1) {
     ...REWARD_POOL.statBoost,
     ...REWARD_POOL.capture,
     ...REWARD_POOL.special,
+    ...REWARD_POOL.relics,
   ];
 
   // Slightly increase better tier chances on higher floors (but not drastically)

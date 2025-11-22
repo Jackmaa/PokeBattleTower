@@ -392,6 +392,244 @@ export const CHOICE_EVENTS = [
       },
     ],
   },
+
+  // ============================================
+  // NEW EVENTS
+  // ============================================
+
+  // Mystic Fountain - Full heal (from SUGGESTIONS.md)
+  {
+    id: 'mystic_fountain',
+    title: '⛲ Mystic Fountain',
+    description: 'A beautiful fountain shimmers with healing energy. The water seems to pulse with restorative magic.',
+    icon: '⛲',
+    floorRange: [1, 20],
+    choices: [
+      {
+        id: 'drink_all',
+        label: 'Let your whole team drink',
+        description: 'Fully restore all HP',
+        outcomes: [
+          { type: 'heal_percent', value: 1.0, weight: 100, message: 'The fountain heals your entire team to full health!' },
+        ],
+      },
+      {
+        id: 'bottle_water',
+        label: 'Bottle the mystical water',
+        description: 'Get healing items instead',
+        outcomes: [
+          { type: 'gain_item', itemId: 'max_potion', weight: 60, message: 'You bottled a Max Potion!' },
+          { type: 'gain_item', itemId: 'full_restore', weight: 40, message: 'You bottled a Full Restore!' },
+        ],
+      },
+    ],
+  },
+
+  // Wise Elder - +10 random stat (from SUGGESTIONS.md)
+  {
+    id: 'wise_elder',
+    title: '🧙 Wise Elder',
+    description: 'An elderly trainer shares ancient secrets of Pokemon training. They offer to train one of your Pokemon.',
+    icon: '🧙',
+    floorRange: [3, 20],
+    choices: [
+      {
+        id: 'accept_training',
+        label: 'Accept the training',
+        description: '+10 to a random stat for one Pokemon',
+        outcomes: [
+          { type: 'stat_boost', stat: 'random', value: 10, weight: 100, message: 'The elder\'s wisdom grants a significant stat boost!' },
+        ],
+      },
+      {
+        id: 'request_wisdom',
+        label: 'Request combat wisdom',
+        description: 'Boost attack and speed',
+        outcomes: [
+          { type: 'stat_boost', stat: 'attack', value: 6, weight: 50, message: 'Attack increased by 6!' },
+          { type: 'stat_boost', stat: 'speed', value: 6, weight: 50, message: 'Speed increased by 6!' },
+        ],
+        multiOutcome: true,
+      },
+      {
+        id: 'request_defense',
+        label: 'Request defensive wisdom',
+        description: 'Boost defense and HP',
+        outcomes: [
+          { type: 'stat_boost', stat: 'defense', value: 6, weight: 50, message: 'Defense increased by 6!' },
+          { type: 'stat_boost', stat: 'hp', value: 15, weight: 50, message: 'HP increased by 15!' },
+        ],
+        multiOutcome: true,
+      },
+    ],
+  },
+
+  // Hidden Treasure - Choice between gold/item/relic (from SUGGESTIONS.md)
+  {
+    id: 'hidden_treasure_choice',
+    title: '💎 Hidden Treasure',
+    description: 'You discover a secret chamber with three treasure chests. Each glows with a different energy.',
+    icon: '💎',
+    floorRange: [5, 20],
+    choices: [
+      {
+        id: 'gold_chest',
+        label: 'Golden Chest',
+        description: 'Guaranteed gold reward',
+        outcomes: [
+          { type: 'gain_gold', value: 150, weight: 60, message: 'You found 150 gold!' },
+          { type: 'gain_gold', value: 300, weight: 30, message: 'Jackpot! You found 300 gold!' },
+          { type: 'gain_gold', value: 500, weight: 10, message: 'TREASURE! You found 500 gold!' },
+        ],
+      },
+      {
+        id: 'item_chest',
+        label: 'Silver Chest',
+        description: 'Contains a rare item',
+        outcomes: [
+          { type: 'gain_item', itemId: 'rare_candy', weight: 40, message: 'You found a Rare Candy!' },
+          { type: 'gain_item', itemId: 'max_revive', weight: 30, message: 'You found a Max Revive!' },
+          { type: 'gain_item', itemId: 'full_restore', weight: 30, message: 'You found a Full Restore!' },
+        ],
+      },
+      {
+        id: 'relic_chest',
+        label: 'Mysterious Chest',
+        description: 'Chance for a relic',
+        outcomes: [
+          { type: 'gain_relic', tier: 'common', weight: 50, message: 'You found a common relic!' },
+          { type: 'gain_relic', tier: 'uncommon', weight: 35, message: 'You found an uncommon relic!' },
+          { type: 'gain_relic', tier: 'rare', weight: 15, message: 'You found a rare relic!' },
+        ],
+      },
+    ],
+  },
+
+  // Casino - Risk/Reward gambling (from SUGGESTIONS.md)
+  {
+    id: 'casino',
+    title: '🎰 Pokemon Casino',
+    description: 'A flashy casino appears! The dealer offers you a chance to double your gold... or lose it all.',
+    icon: '🎰',
+    floorRange: [3, 18],
+    choices: [
+      {
+        id: 'bet_small',
+        label: 'Bet 50 gold',
+        description: '50% chance to double, 50% to lose',
+        cost: { gold: 50 },
+        outcomes: [
+          { type: 'gain_gold', value: 100, weight: 50, message: 'You won! Doubled your bet to 100 gold!' },
+          { type: 'lose_gold', value: 50, weight: 50, message: 'You lost your bet...' },
+        ],
+      },
+      {
+        id: 'bet_medium',
+        label: 'Bet 100 gold',
+        description: '50% chance to double, 50% to lose',
+        cost: { gold: 100 },
+        outcomes: [
+          { type: 'gain_gold', value: 200, weight: 50, message: 'Jackpot! You won 200 gold!' },
+          { type: 'lose_gold', value: 100, weight: 50, message: 'The house always wins... sometimes.' },
+        ],
+      },
+      {
+        id: 'bet_big',
+        label: 'Bet 200 gold (High Risk)',
+        description: '40% to triple, 60% to lose all',
+        cost: { gold: 200 },
+        outcomes: [
+          { type: 'gain_gold', value: 600, weight: 40, message: 'HUGE WIN! You tripled your bet!' },
+          { type: 'lose_gold', value: 200, weight: 60, message: 'The gamble didn\'t pay off...' },
+        ],
+      },
+      {
+        id: 'leave_casino',
+        label: 'Leave',
+        description: 'Gambling is for suckers',
+        outcomes: [
+          { type: 'nothing', weight: 100, message: 'You wisely walk away from the casino.' },
+        ],
+      },
+    ],
+  },
+
+  // Intensive Training - Risk/Reward stat boost (from SUGGESTIONS.md)
+  {
+    id: 'intensive_training',
+    title: '💪 Intensive Training',
+    description: 'A martial arts master offers to train your Pokemon intensively. The training is brutal but effective.',
+    icon: '💪',
+    floorRange: [4, 18],
+    choices: [
+      {
+        id: 'accept_training',
+        label: 'Accept the brutal training',
+        description: '-30% HP team, +15 stat each Pokemon',
+        outcomes: [
+          { type: 'damage_percent', value: 0.3, weight: 50, message: 'The training was intense!' },
+          { type: 'stat_boost_team', stat: 'random', value: 15, weight: 50, message: 'But your whole team grew stronger!' },
+        ],
+        multiOutcome: true,
+      },
+      {
+        id: 'light_training',
+        label: 'Request lighter training',
+        description: '-15% HP team, +8 stat each Pokemon',
+        outcomes: [
+          { type: 'damage_percent', value: 0.15, weight: 50, message: 'A moderate workout.' },
+          { type: 'stat_boost_team', stat: 'random', value: 8, weight: 50, message: 'Your team improved!' },
+        ],
+        multiOutcome: true,
+      },
+      {
+        id: 'decline',
+        label: 'Politely decline',
+        description: 'Too risky right now',
+        outcomes: [
+          { type: 'nothing', weight: 100, message: 'You decide to continue without training.' },
+        ],
+      },
+    ],
+  },
+
+  // Move Tutor - Learn new moves (NEW)
+  {
+    id: 'move_tutor',
+    title: '📚 Move Tutor',
+    description: 'A renowned Move Tutor offers to teach your Pokemon a new technique. For a price, of course.',
+    icon: '📚',
+    floorRange: [3, 18],
+    choices: [
+      {
+        id: 'pay_for_lesson',
+        label: 'Pay 75 gold for a lesson',
+        description: 'Learn a new move',
+        cost: { gold: 75 },
+        outcomes: [
+          { type: 'learn_move', weight: 100, message: 'The Move Tutor offers to teach a new technique!' },
+        ],
+      },
+      {
+        id: 'bargain',
+        label: 'Try to bargain (50 gold)',
+        description: 'Risky but cheaper',
+        cost: { gold: 50 },
+        outcomes: [
+          { type: 'learn_move', weight: 60, message: 'The tutor agrees! Choose a new move to learn.' },
+          { type: 'nothing', weight: 40, message: 'The tutor refuses. "My skills aren\'t cheap!"' },
+        ],
+      },
+      {
+        id: 'decline',
+        label: 'Decline the offer',
+        description: 'Keep your gold',
+        outcomes: [
+          { type: 'nothing', weight: 100, message: 'You decide to save your money.' },
+        ],
+      },
+    ],
+  },
 ];
 
 /**
