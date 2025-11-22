@@ -6,6 +6,8 @@ import { towerMapState, currentNodeState } from "../recoil/atoms/towerMap";
 import { inventoryState, currencyState } from "../recoil/atoms/inventory";
 import { gameViewState } from "../recoil/atoms/game";
 import { activePokemonIndexState } from "../recoil/atoms/active";
+import { relicsState } from "../recoil/atoms/relics";
+import { getRelicById } from "../utils/relics";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button, Card } from "../components/ui";
 import { hasSaves, loadAutoSave } from "../utils/saveManager";
@@ -13,11 +15,13 @@ import SaveLoadUI from "../components/SaveLoadUI";
 import TalentTree from "../components/TalentTree";
 import StarterShop from "../components/StarterShop";
 import AchievementsScreen from "../components/AchievementsScreen";
+import RelicShopPage from "./RelicShopPage";
 import { fetchStarterPokemon, getStarterInfo } from "../utils/getStarterPokemon";
 import {
   getDifficultyLevels,
   setDifficulty,
-  getMetaProgress
+  getMetaProgress,
+  getRelicCollection
 } from "../utils/metaProgression";
 import {
   loadProgression,
@@ -37,12 +41,14 @@ export default function StarterScreen({ onStart }) {
   const setCurrentNode = useSetRecoilState(currentNodeState);
   const setGameView = useSetRecoilState(gameViewState);
   const setActiveIndex = useSetRecoilState(activePokemonIndexState);
+  const setRelics = useSetRecoilState(relicsState);
 
   const [isLoading, setIsLoading] = useState(true);
   const [showLoadUI, setShowLoadUI] = useState(false);
   const [showTalentTree, setShowTalentTree] = useState(false);
   const [showShop, setShowShop] = useState(false);
   const [showAchievements, setShowAchievements] = useState(false);
+  const [showRelicShop, setShowRelicShop] = useState(false);
   const [canContinue, setCanContinue] = useState(false);
 
   // Progression state
@@ -129,6 +135,20 @@ export default function StarterScreen({ onStart }) {
 
     if (startingGold > 0) {
       setCurrency(prev => prev + startingGold);
+    }
+
+    // Load equipped relics from localStorage for this run
+    const relicCollection = getRelicCollection();
+    if (relicCollection.equipped?.length > 0) {
+      // Convert equipped relic IDs to full relic objects
+      const equippedRelics = relicCollection.equipped
+        .map(id => getRelicById(id))
+        .filter(r => r); // Filter out any null relics
+
+      setRelics(equippedRelics);
+      console.log(`[StarterScreen] Loaded ${equippedRelics.length} equipped relics for run`);
+    } else {
+      setRelics([]); // Reset relics for new run
     }
 
     // Start with selected starter
@@ -287,6 +307,12 @@ export default function StarterScreen({ onStart }) {
                   className="px-4 py-2 bg-gradient-to-r from-yellow-500 to-amber-500 text-white font-bold rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2"
                 >
                   <span>🏆</span> Achievements
+                </button>
+                <button
+                  onClick={() => setShowRelicShop(true)}
+                  className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2"
+                >
+                  <span>💎</span> Relics
                 </button>
               </div>
             </div>
@@ -530,6 +556,9 @@ export default function StarterScreen({ onStart }) {
         )}
         {showAchievements && (
           <AchievementsScreen onClose={() => setShowAchievements(false)} />
+        )}
+        {showRelicShop && (
+          <RelicShopPage onClose={() => setShowRelicShop(false)} />
         )}
       </AnimatePresence>
     </div>

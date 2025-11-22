@@ -18,7 +18,7 @@ import { getNodeById } from "../utils/towerMap";
 import { getTypeEffectiveness } from "../utils/typeChart";
 import { generateEnemyTeam } from "../utils/generateEnemyTeam";
 import { getItemById } from "../utils/items";
-import { calculateRelicBonuses } from "../utils/relics";
+import { calculateRelicBonuses, getRandomRelic, RELIC_TIERS } from "../utils/relics";
 import { trackStat } from "../utils/metaProgression";
 import { canEvolveWithStone, getEvolvedPokemon } from "../utils/evolutions";
 import {
@@ -53,13 +53,16 @@ import { getRandomPokemon } from "../utils/getRandomPokemon";
 import { calculateCaptureLevel } from "../utils/rewards";
 import RewardScreen from "../components/RewardScreen";
 import GameOverScreen from "../components/GameOverScreen";
+import XPGainScreen from "../components/XPGainScreen";
 import AudioControls from "../components/AudioControls";
 import MoveSelector from "../components/MoveSelector";
 import TurnOrderDisplay from "../components/TurnOrderDisplay";
 import TargetSelector from "../components/TargetSelector";
 import InventoryPanel from "../components/InventoryPanel";
 import RelicsPanel from "../components/RelicsPanel";
+import MoveLearningModal from "../components/MoveLearningModal";
 import { useAudio } from "../hooks/useAudio";
+import { discoverRelic } from "../utils/metaProgression";
 
 export default function FloorScreen({ onFloorComplete }) {
   const [newMon, setNewMon] = useState(null);
@@ -76,9 +79,13 @@ export default function FloorScreen({ onFloorComplete }) {
   const [battleLog, setBattleLog] = useRecoilState(battleLogState);
   const [currency, setCurrency] = useRecoilState(currencyState);
   const [inventory, setInventory] = useRecoilState(inventoryState);
-  const relics = useRecoilValue(relicsState);
+  const [relics, setRelics] = useRecoilState(relicsState);
   const [pendingReward, setPendingReward] = useState(null);
   const [rewardApplied, setRewardApplied] = useState(false);
+  const [xpGainResult, setXpGainResult] = useState(null); // Store XP result to show XP screen before rewards
+  const [teamBeforeXP, setTeamBeforeXP] = useState(null); // Store team state before XP for comparison
+  const [pendingMoveLearn, setPendingMoveLearn] = useState(null); // { pokemon, newMove, pokemonIndex }
+  const [moveLearningQueue, setMoveLearningQueue] = useState([]); // Queue of pending move learns
   const [isSwitching, setIsSwitching] = useState(false);
   const [isBattleInProgress, setIsBattleInProgress] = useState(false);
   const [showInventory, setShowInventory] = useState(false);
@@ -97,6 +104,8 @@ export default function FloorScreen({ onFloorComplete }) {
   const [selectedTargetId, setSelectedTargetId] = useState(null);
   const [enemyTargeting, setEnemyTargeting] = useState({}); // { enemyId: targetPlayerId }
   const battleStateRef = useRef(null); // For accessing battle state in async functions
+  const handleBattleEndRef = useRef(null); // Ref to avoid circular dependency
+  const lastSetupNodeIdRef = useRef(null); // Track which node we've already setup to prevent double generation
 
   // Battle effects state
   const [currentAttack, setCurrentAttack] = useState(null);
@@ -146,13 +155,23 @@ export default function FloorScreen({ onFloorComplete }) {
     const setupBattle = async () => {
       // Get the current node to determine battle type
       const currentNode = getNodeById(towerMap, currentNodeId);
-      const nodeType = currentNode?.type || 'combat';
+      if (!currentNode) return; // Wait for valid node
+
+      // Prevent double generation when towerMap changes but nodeId is the same
+      if (lastSetupNodeIdRef.current === currentNodeId) {
+        console.log(`[FloorScreen] Skipping setup - already setup for node ${currentNodeId}`);
+        return;
+      }
+      lastSetupNodeIdRef.current = currentNodeId;
+
+      const nodeType = currentNode.type || 'combat';
+      const nodeFloor = currentNode.floor; // Use node's floor directly, not state
 
       // Generate enemies based on node type (scaling count with floor)
-      const enemies = await generateEnemyTeam(null, floor, nodeType);
+      const enemies = await generateEnemyTeam(null, nodeFloor, nodeType);
       setEnemyTeam(enemies);
 
-      console.log(`[FloorScreen] Setup NvM battle for floor ${floor}, node type: ${nodeType}, enemies: ${enemies.length}`);
+      console.log(`[FloorScreen] Setup NvM battle for floor ${nodeFloor}, node type: ${nodeType}, enemies: ${enemies.length}`);
 
       // Initialize NvM Battle State
       if (team.length > 0 && enemies.length > 0) {
@@ -169,7 +188,7 @@ export default function FloorScreen({ onFloorComplete }) {
         // Calculate initial enemy targeting for display
         const targeting = {};
         for (const combatant of battleInstance.getEnemyCombatants()) {
-          const aiDifficulty = getAIDifficultyForEnemy(combatant.pokemon, floor);
+          const aiDifficulty = getAIDifficultyForEnemy(combatant.pokemon, nodeFloor);
           const decision = getAIDecision(combatant, battleInstance, aiDifficulty);
           targeting[combatant.id] = decision.targetId;
         }
@@ -189,16 +208,16 @@ export default function FloorScreen({ onFloorComplete }) {
           }, 1500); // 1.5 second delay to let player see the setup
         }
       }
+
+      // Play dynamic music based on floor
+      playMusicForFloor(nodeFloor);
     };
     setupBattle();
 
     // Reset mega evolution state at start of each battle
     setHasMegaEvolved(false);
     setBattleLog([]);
-
-    // Play dynamic music based on floor
-    playMusicForFloor(floor);
-  }, [floor, currentNodeId, towerMap, playMusicForFloor]);
+  }, [currentNodeId, towerMap, playMusicForFloor]);
 
   const runTurnBasedBattle = async (playerMove) => {
     const player = team[activeIndex];
@@ -652,26 +671,98 @@ export default function FloorScreen({ onFloorComplete }) {
 
     setBattleLog(prev => [...prev, logMessage]);
 
-    // Apply move effects (status, stat changes)
-    if (move.effect && target.currentHP > 0) {
+    // Apply move effects (status, stat changes, recoil, flinch, team buffs)
+    if (move.effect) {
       const effect = move.effect;
 
-      if (effect.type === 'status' && Math.random() * 100 < (effect.chance || 100)) {
+      // RECOIL DAMAGE - Apply to attacker
+      if (effect.type === 'recoil' && actualDamage > 0) {
+        const recoilDamage = Math.floor(actualDamage * (effect.percent / 100));
+        if (recoilDamage > 0) {
+          battleInstance.applyDamage(attacker.id, recoilDamage);
+          setBattleLog(prev => [...prev, `💔 ${attacker.pokemon.name} took ${recoilDamage} recoil damage!`]);
+
+          // Check if attacker fainted from recoil
+          if (attacker.currentHP <= 0) {
+            playFaintSound();
+            setBattleLog(prev => [...prev, `💀 ${attacker.pokemon.name} fainted from recoil!`]);
+          }
+        }
+
+        // Apply secondary effect if recoil move has one (e.g., Flare Blitz burn)
+        if (effect.secondaryEffect && target.currentHP > 0) {
+          const secondary = effect.secondaryEffect;
+          if (secondary.type === 'status' && Math.random() * 100 < (secondary.chance || 100)) {
+            const statusResult = applyStatus(target, secondary.status);
+            if (statusResult.applied) {
+              setBattleLog(prev => [...prev, statusResult.message]);
+            }
+          }
+        }
+      }
+
+      // FLINCH - Mark target as unable to move this turn (if they haven't moved yet)
+      if (effect.type === 'flinch' && target.currentHP > 0) {
+        // Check for firstTurnOnly restriction (Fake Out)
+        const isFirstTurn = battleInstance.roundNumber === 1;
+        if (!effect.firstTurnOnly || isFirstTurn) {
+          if (Math.random() * 100 < (effect.chance || 100)) {
+            // Add flinch to volatile status
+            if (!target.volatileStatus.includes('flinch')) {
+              target.volatileStatus.push('flinch');
+              setBattleLog(prev => [...prev, `😵 ${target.pokemon.name} flinched!`]);
+            }
+          }
+        }
+      }
+
+      // TEAM BUFF - Apply buff to all allies
+      if (effect.type === 'team_buff') {
+        const allies = attacker.isEnemy
+          ? battleInstance.getEnemyCombatants()
+          : battleInstance.getPlayerCombatants();
+
+        // Store team buff in battle state (we'll need to track this)
+        if (!battleInstance.teamBuffs) {
+          battleInstance.teamBuffs = { player: {}, enemy: {} };
+        }
+        const buffSide = attacker.isEnemy ? 'enemy' : 'player';
+        battleInstance.teamBuffs[buffSide][effect.buff] = {
+          duration: effect.duration,
+          reduction: effect.reduction,
+          speedBoost: effect.speedBoost,
+        };
+
+        const buffNames = {
+          'light_screen': 'Light Screen',
+          'reflect': 'Reflect',
+          'tailwind': 'Tailwind',
+          'wide_guard': 'Wide Guard',
+        };
+        setBattleLog(prev => [...prev, `🛡️ ${buffNames[effect.buff] || effect.buff} was set up for the team!`]);
+      }
+
+      // STATUS EFFECT - Apply to target
+      if (effect.type === 'status' && target.currentHP > 0 && Math.random() * 100 < (effect.chance || 100)) {
         const statusResult = applyStatus(target, effect.status);
         if (statusResult.applied) {
           setBattleLog(prev => [...prev, statusResult.message]);
         }
       }
 
-      if (effect.type === 'stat_change') {
-        const targetForStat = effect.self ? attacker : target;
-        const stats = effect.stats || [effect.stat];
-        for (const stat of stats) {
-          const result = battleInstance.applyStatChange(targetForStat.id, stat, effect.stages);
-          if (result.changed) {
-            const direction = effect.stages > 0 ? 'rose' : 'fell';
-            const intensity = Math.abs(effect.stages) > 1 ? 'sharply ' : '';
-            setBattleLog(prev => [...prev, `📊 ${targetForStat.pokemon.name}'s ${stat.replace('_', ' ')} ${intensity}${direction}!`]);
+      // STAT CHANGE - Apply to self or target
+      if (effect.type === 'stat_change' && (target.currentHP > 0 || effect.self)) {
+        // Only apply if chance check passes (or no chance specified = guaranteed)
+        if (!effect.chance || Math.random() * 100 < effect.chance) {
+          const targetForStat = effect.self ? attacker : target;
+          const stats = effect.stats || [effect.stat];
+          for (const stat of stats) {
+            const result = battleInstance.applyStatChange(targetForStat.id, stat, effect.stages);
+            if (result.changed) {
+              const direction = effect.stages > 0 ? 'rose' : 'fell';
+              const intensity = Math.abs(effect.stages) > 1 ? 'sharply ' : '';
+              setBattleLog(prev => [...prev, `📊 ${targetForStat.pokemon.name}'s ${stat.replace('_', ' ')} ${intensity}${direction}!`]);
+            }
           }
         }
       }
@@ -860,6 +951,25 @@ export default function FloorScreen({ onFloorComplete }) {
       return;
     }
 
+    // Skip fainted combatants - they may have died since turn order was calculated
+    if (currentCombatant.currentHP <= 0) {
+      battleInstance.advanceTurn();
+      updateBattleDisplay(battleInstance);
+
+      // Check if battle ended after skipping fainted Pokemon
+      if (battleInstance.isFinished) {
+        // Use ref to call handleBattleEnd without circular dependency
+        if (handleBattleEndRef.current) {
+          handleBattleEndRef.current(battleInstance);
+        }
+        return;
+      }
+
+      // Continue to next turn
+      processNextTurn(battleInstance);
+      return;
+    }
+
     setCurrentCombatantId(currentCombatant.id);
 
     if (currentCombatant.isEnemy) {
@@ -873,7 +983,7 @@ export default function FloorScreen({ onFloorComplete }) {
       setAwaitingPlayerMove(true);
       setBattleLog(prev => [...prev, `🎮 ${currentCombatant.pokemon.name}'s turn!`]);
     }
-  }, [processEnemyTurn]);
+  }, [processEnemyTurn, updateBattleDisplay]);
 
   /**
    * Handle battle end (win/lose)
@@ -881,6 +991,27 @@ export default function FloorScreen({ onFloorComplete }) {
   const handleBattleEnd = useCallback((battleInstance) => {
     setIsBattleInProgress(false);
     setAwaitingPlayerMove(false);
+
+    // Sync HP from battle instance to team state
+    // This is crucial - the battle modifies combatant HP but team state needs to be updated
+    const syncedTeam = team.map((pokemon, index) => {
+      const combatant = battleInstance.combatants.find(
+        c => !c.isEnemy && c.teamIndex === index
+      );
+      if (combatant) {
+        return {
+          ...pokemon,
+          stats: {
+            ...pokemon.stats,
+            hp: Math.max(0, combatant.currentHP),
+          },
+        };
+      }
+      return pokemon;
+    });
+
+    // Update team with synced HP
+    setTeam(syncedTeam);
 
     if (battleInstance.winner === 'player') {
       playVictorySound();
@@ -897,43 +1028,26 @@ export default function FloorScreen({ onFloorComplete }) {
       setCurrency(prev => prev + goldReward);
       setBattleLog(prev => [...prev, `🏆 Victory! Earned ${goldReward} gold!`]);
 
-      // Distribute XP to team (equal split)
-      const xpResult = distributeXPToTeam(team, enemyTeam, floor, 'equal');
+      // Distribute XP to team (equal split) - Store result for XP screen
+      // Use syncedTeam for XP distribution so HP values are correct
+      const xpResult = distributeXPToTeam(syncedTeam, enemyTeam, floor, 'equal');
       setBattleLog(prev => [...prev, `⭐ Team earned ${xpResult.totalXP} XP! (${xpResult.xpPerPokemon} each)`]);
 
-      // Apply XP and check for level ups
-      if (xpResult.levelUps.length > 0) {
-        playLevelUpSound();
-        for (const levelUp of xpResult.levelUps) {
-          setBattleLog(prev => [...prev,
-            `🎉 ${levelUp.name} leveled up! Lv.${levelUp.oldLevel} → Lv.${levelUp.newLevel}`
-          ]);
-        }
-      }
-
-      // Update team with XP
-      setTeam(xpResult.updatedTeam);
-
-      // Post-battle healing
-      if (victoryRelicBonuses.post_battle_heal > 0) {
-        const healPercent = victoryRelicBonuses.post_battle_heal;
-        setTeam(prevTeam => prevTeam.map(poke => ({
-          ...poke,
-          stats: {
-            ...poke.stats,
-            hp: poke.stats.hp > 0
-              ? Math.min(poke.stats.hp + Math.floor(poke.stats.hp_max * healPercent), poke.stats.hp_max)
-              : 0,
-          },
-        })));
-        setBattleLog(prev => [...prev, `🌿 Relics heal team for ${Math.round(healPercent * 100)}% HP!`]);
-      }
+      // Store XP result and current team for XP gain screen (don't apply yet)
+      setTeamBeforeXP([...syncedTeam]); // Snapshot of team before XP with correct HP
+      setXpGainResult({
+        ...xpResult,
+        relicHealPercent: victoryRelicBonuses.post_battle_heal, // Store for later application
+      });
     } else {
       playDefeatSound();
       setBattle({ playerHP: 0, enemyHP: 1, result: "lose" });
       setBattleLog(prev => [...prev, `💀 Your team was defeated...`]);
     }
   }, [relics, floor, team, enemyTeam, playVictorySound, playDefeatSound, playLevelUpSound, setCurrency, setTeam]);
+
+  // Keep ref updated for use in processNextTurn (avoids circular dependency)
+  handleBattleEndRef.current = handleBattleEnd;
 
   // ============================================
   // NvM MOVE SELECTION HANDLERS
@@ -1087,6 +1201,19 @@ export default function FloorScreen({ onFloorComplete }) {
 
     setTeam(updatedTeam);
     setBattleLog(prev => [...prev, `✨💎 ${activePokemon.name} MEGA EVOLVED! Power surges through your Pokemon!`]);
+
+    // Sync with battle instance if battle is active
+    const battleInstance = battleStateRef.current;
+    if (battleInstance && !battleInstance.isFinished) {
+      const megaPokemon = updatedTeam[activeIndex];
+      const combatant = battleInstance.combatants.find(
+        c => !c.isEnemy && c.teamIndex === activeIndex
+      );
+      if (combatant) {
+        combatant.pokemon = { ...combatant.pokemon, ...megaPokemon };
+        updateBattleDisplay(battleInstance);
+      }
+    }
 
     // Visual effects
     setHighlighted({ index: activeIndex, stat: 'all' });
@@ -1322,8 +1449,146 @@ export default function FloorScreen({ onFloorComplete }) {
     }));
 
     setTeam(updatedTeam);
+
+    // Sync HP/stats with battle instance if battle is active
+    // This is crucial - items modify team state but battleInstance has its own HP tracking
+    const battleInstance = battleStateRef.current;
+    if (battleInstance && !battleInstance.isFinished) {
+      const updatedPokemon = updatedTeam[pokemonIndex];
+      const combatant = battleInstance.combatants.find(
+        c => !c.isEnemy && c.teamIndex === pokemonIndex
+      );
+      if (combatant) {
+        // Sync HP
+        combatant.currentHP = updatedPokemon.stats.hp;
+        combatant.maxHP = updatedPokemon.stats.hp_max;
+        // Sync other stats if they changed (e.g., from Rare Candy)
+        combatant.pokemon = { ...combatant.pokemon, ...updatedPokemon };
+        // Update display
+        updateBattleDisplay(battleInstance);
+      }
+    }
+
     setTimeout(() => setHighlighted(null), 3000);
     setSelectedItem(null);
+  };
+
+  /**
+   * Handle XP gain screen completion - apply XP and check for pending move learns
+   */
+  const handleXPGainComplete = () => {
+    if (!xpGainResult) return;
+
+    // Play level up sound if there were level ups
+    if (xpGainResult.levelUps?.length > 0) {
+      playLevelUpSound();
+      for (const levelUp of xpGainResult.levelUps) {
+        setBattleLog(prev => [...prev,
+          `🎉 ${levelUp.name} leveled up! Lv.${levelUp.oldLevel} → Lv.${levelUp.newLevel}`
+        ]);
+      }
+    }
+
+    // Apply XP to team
+    let updatedTeam = xpGainResult.updatedTeam;
+
+    // Apply post-battle healing from relics
+    if (xpGainResult.relicHealPercent > 0) {
+      const healPercent = xpGainResult.relicHealPercent;
+      updatedTeam = updatedTeam.map(poke => ({
+        ...poke,
+        stats: {
+          ...poke.stats,
+          hp: poke.stats.hp > 0
+            ? Math.min(poke.stats.hp + Math.floor(poke.stats.hp_max * healPercent), poke.stats.hp_max)
+            : 0,
+        },
+      }));
+      setBattleLog(prev => [...prev, `🌿 Relics heal team for ${Math.round(healPercent * 100)}% HP!`]);
+    }
+
+    // Update team state
+    setTeam(updatedTeam);
+
+    // Check for pending move learns
+    if (xpGainResult.pendingMoveLearn && xpGainResult.pendingMoveLearn.length > 0) {
+      // Build queue of move learns with pokemon data from updated team
+      // Structure: { pokemonIndex, pokemon, newMove }
+      const queue = xpGainResult.pendingMoveLearn.map(pending => {
+        // Get the latest pokemon data from updated team
+        const pokemon = updatedTeam[pending.pokemonIndex];
+        return {
+          pokemon,
+          newMove: pending.newMove,
+          pokemonIndex: pending.pokemonIndex
+        };
+      }).filter(item => item.pokemon && item.newMove);
+
+      if (queue.length > 0) {
+        setMoveLearningQueue(queue.slice(1)); // Rest of queue
+        setPendingMoveLearn(queue[0]); // First one to learn
+        setXpGainResult(null);
+        setTeamBeforeXP(null);
+        return; // Don't proceed to rewards yet
+      }
+    }
+
+    // Clear XP gain screen state to proceed to rewards
+    setXpGainResult(null);
+    setTeamBeforeXP(null);
+  };
+
+  /**
+   * Handle learning a new move - replace old move with new one
+   */
+  const handleLearnMove = (pokemon, newMove, moveIndex, oldMove) => {
+    // Update the pokemon's moves in team
+    const updatedTeam = team.map((poke, idx) => {
+      if (idx === pendingMoveLearn.pokemonIndex) {
+        const updatedMoves = [...poke.moves];
+        updatedMoves[moveIndex] = {
+          ...newMove,
+          pp: newMove.maxPP,
+        };
+        return { ...poke, moves: updatedMoves };
+      }
+      return poke;
+    });
+
+    setTeam(updatedTeam);
+    setBattleLog(prev => [...prev, `📚 ${pokemon.name} learned ${newMove.name}! (forgot ${oldMove.name})`]);
+
+    // Process next in queue or clear
+    processNextMoveLearn();
+  };
+
+  /**
+   * Handle declining to learn a move
+   */
+  const handleDeclineMoveLearn = () => {
+    if (pendingMoveLearn) {
+      setBattleLog(prev => [...prev, `${pendingMoveLearn.pokemon.name} did not learn ${pendingMoveLearn.newMove.name}.`]);
+    }
+    processNextMoveLearn();
+  };
+
+  /**
+   * Process the next move learn in queue or proceed to rewards
+   */
+  const processNextMoveLearn = () => {
+    if (moveLearningQueue.length > 0) {
+      // Get next pokemon from queue
+      const [next, ...rest] = moveLearningQueue;
+      // Update pokemon reference from current team state
+      const pokemonIndex = team.findIndex(p => p.name === next.pokemon.name);
+      const pokemon = team[pokemonIndex];
+      setPendingMoveLearn({ ...next, pokemon, pokemonIndex });
+      setMoveLearningQueue(rest);
+    } else {
+      // All done, proceed to rewards
+      setPendingMoveLearn(null);
+      setMoveLearningQueue([]);
+    }
   };
 
   const handleRewardApply = async (type, index, rewardData = null) => {
@@ -1447,6 +1712,29 @@ export default function FloorScreen({ onFloorComplete }) {
       }
 
       return; // prevent shared code below from running
+    } else if (type === "relic") {
+      // Get a random relic of the specified tier
+      const relicTierMap = {
+        common: RELIC_TIERS.COMMON,
+        uncommon: RELIC_TIERS.UNCOMMON,
+        rare: RELIC_TIERS.RARE,
+        legendary: RELIC_TIERS.LEGENDARY,
+      };
+      const tier = relicTierMap[rewardData?.relicTier] || RELIC_TIERS.COMMON;
+      const relic = getRandomRelic(tier);
+
+      if (relic) {
+        playLevelUpSound();
+        setRelics(prev => [...prev, relic]);
+        setBattleLog(prev => [...prev, `🎁 Obtained ${relic.name}!`]);
+
+        // Persist relic discovery to localStorage
+        discoverRelic(relic.id);
+      }
+
+      setPendingReward(null);
+      setRewardApplied(true);
+      return;
     }
 
     // ✅ Shared cleanup (for heal and buff)
@@ -1511,7 +1799,7 @@ export default function FloorScreen({ onFloorComplete }) {
 
             {/* Relics Panel */}
             <div className="flex-shrink-0">
-              <RelicsPanel compact={false} tooltipPosition="bottom" />
+              <RelicsPanel compact={false} disableTooltip={true} />
             </div>
           </div>
 
@@ -1967,9 +2255,31 @@ export default function FloorScreen({ onFloorComplete }) {
         )}
       </AnimatePresence>
 
-      {/* Reward Screen */}
+      {/* XP Gain Screen - Shows before rewards */}
       <AnimatePresence>
-        {battle.result === "win" && !reward && !pendingReward && !rewardApplied && (
+        {battle.result === "win" && xpGainResult && teamBeforeXP && (
+          <XPGainScreen
+            xpResult={xpGainResult}
+            originalTeam={teamBeforeXP}
+            onComplete={handleXPGainComplete}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Move Learning Modal - Shows after XP screen if pokemon want to learn moves */}
+      <MoveLearningModal
+        isOpen={!!pendingMoveLearn}
+        onClose={handleDeclineMoveLearn}
+        pokemon={pendingMoveLearn?.pokemon}
+        newMove={pendingMoveLearn?.newMove}
+        onLearnMove={handleLearnMove}
+        onDecline={handleDeclineMoveLearn}
+        source="level-up"
+      />
+
+      {/* Reward Screen - Shows after XP screen and move learning */}
+      <AnimatePresence>
+        {battle.result === "win" && !xpGainResult && !pendingMoveLearn && !reward && !pendingReward && !rewardApplied && (
           <RewardScreen
             setPendingReward={setPendingReward}
             onApplyReward={handleRewardApply}
