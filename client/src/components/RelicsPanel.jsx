@@ -43,7 +43,7 @@ function RelicTooltip({ relic, position = 'top' }) {
   );
 }
 
-function RelicIcon({ relic, size = 'md', tooltipPosition = 'top' }) {
+function RelicIcon({ relic, size = 'md', tooltipPosition = 'top', disableTooltip = false }) {
   const [showTooltip, setShowTooltip] = useState(false);
   const tierColor = getRelicTierColor(relic.tier);
 
@@ -81,13 +81,13 @@ function RelicIcon({ relic, size = 'md', tooltipPosition = 'top' }) {
       </motion.div>
 
       <AnimatePresence>
-        {showTooltip && <RelicTooltip relic={relic} position={tooltipPosition} />}
+        {showTooltip && !disableTooltip && <RelicTooltip relic={relic} position={tooltipPosition} />}
       </AnimatePresence>
     </div>
   );
 }
 
-export default function RelicsPanel({ compact = false, tooltipPosition = 'top' }) {
+export default function RelicsPanel({ compact = false, tooltipPosition = 'top', disableTooltip = false }) {
   const relics = useRecoilValue(relicsState);
   const [expanded, setExpanded] = useState(false);
 
@@ -107,7 +107,7 @@ export default function RelicsPanel({ compact = false, tooltipPosition = 'top' }
     return (
       <div className="flex items-center gap-1">
         {relics.slice(0, 5).map((relic, index) => (
-          <RelicIcon key={relic.id + index} relic={relic} size="sm" tooltipPosition={tooltipPosition} />
+          <RelicIcon key={relic.id + index} relic={relic} size="sm" tooltipPosition={tooltipPosition} disableTooltip={disableTooltip} />
         ))}
         {relics.length > 5 && (
           <div className="w-8 h-8 rounded-lg bg-gray-700 flex items-center justify-center text-xs text-gray-400 font-bold">
@@ -119,7 +119,7 @@ export default function RelicsPanel({ compact = false, tooltipPosition = 'top' }
   }
 
   return (
-    <div className="bg-gray-800/50 rounded-lg border border-gray-700 overflow-hidden">
+    <div className="bg-gray-800/50 rounded-lg border border-gray-700 overflow-visible">
       {/* Header */}
       <button
         onClick={() => setExpanded(!expanded)}
@@ -141,7 +141,7 @@ export default function RelicsPanel({ compact = false, tooltipPosition = 'top' }
       {/* Relic Icons (always visible) */}
       <div className="px-3 pb-3 flex flex-wrap gap-2">
         {relics.map((relic, index) => (
-          <RelicIcon key={relic.id + index} relic={relic} size="md" tooltipPosition={tooltipPosition} />
+          <RelicIcon key={relic.id + index} relic={relic} size="md" tooltipPosition={tooltipPosition} disableTooltip={disableTooltip} />
         ))}
       </div>
 
@@ -186,6 +186,12 @@ export default function RelicsPanel({ compact = false, tooltipPosition = 'top' }
                 )}
                 {bonuses.shop_discount > 0 && (
                   <div className="text-amber-400">-{Math.round(bonuses.shop_discount * 100)}% Shop Prices</div>
+                )}
+                {bonuses.physical_bonus > 0 && (
+                  <div className="text-orange-400">+{Math.round(bonuses.physical_bonus * 100)}% Physical Dmg</div>
+                )}
+                {bonuses.special_bonus > 0 && (
+                  <div className="text-blue-400">+{Math.round(bonuses.special_bonus * 100)}% Special Dmg</div>
                 )}
                 {bonuses.revive_once && (
                   <div className="text-purple-400">Revive Ready</div>
