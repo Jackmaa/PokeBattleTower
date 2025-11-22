@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getAllAchievements, getMetaProgress } from '../utils/metaProgression';
+import { getAchievementsWithRewards, getMetaProgress } from '../utils/metaProgression';
 import { loadProgression, getPlayerTitle } from '../utils/playerProgression';
+import { getRelicById } from '../utils/relics';
 
 // Achievement categories for filtering
 const CATEGORIES = {
@@ -24,6 +25,69 @@ function getAchievementCategory(achievementId) {
   if (collectionAchievements.includes(achievementId)) return CATEGORIES.COLLECTION;
   if (challengeAchievements.includes(achievementId)) return CATEGORIES.CHALLENGE;
   return CATEGORIES.PROGRESS;
+}
+
+// Helper to render reward display
+function RewardDisplay({ reward, unlocked, rewardClaimed }) {
+  if (!reward) return null;
+
+  const getRewardInfo = () => {
+    switch (reward.type) {
+      case 'gold':
+        return {
+          icon: '💰',
+          text: `${reward.amount} Permanent Gold`,
+          bgColor: 'from-yellow-600/30 to-amber-600/30',
+          borderColor: 'border-yellow-500/50',
+        };
+      case 'relic': {
+        const relic = getRelicById(reward.relicId);
+        return {
+          icon: relic?.icon || '🎁',
+          text: reward.relicName || relic?.name || 'Special Relic',
+          description: reward.relicDescription || relic?.description,
+          bgColor: 'from-purple-600/30 to-pink-600/30',
+          borderColor: 'border-purple-500/50',
+        };
+      }
+      case 'starter':
+        return {
+          icon: '🔴',
+          text: `Unlock ${reward.starterName || 'Special Starter'}`,
+          bgColor: 'from-red-600/30 to-orange-600/30',
+          borderColor: 'border-red-500/50',
+        };
+      default:
+        return null;
+    }
+  };
+
+  const info = getRewardInfo();
+  if (!info) return null;
+
+  return (
+    <div className={`mt-3 p-3 rounded-lg bg-gradient-to-r ${info.bgColor} border ${info.borderColor}`}>
+      <div className="flex items-center gap-2">
+        <span className="text-xl">{info.icon}</span>
+        <div className="flex-1">
+          <div className={`font-bold text-sm ${unlocked ? 'text-white' : 'text-gray-400'}`}>
+            {info.text}
+          </div>
+          {info.description && (
+            <div className={`text-xs ${unlocked ? 'text-white/70' : 'text-gray-500'}`}>
+              {info.description}
+            </div>
+          )}
+        </div>
+        {unlocked && rewardClaimed && (
+          <span className="text-green-400 text-xs font-bold">CLAIMED</span>
+        )}
+        {!unlocked && (
+          <span className="text-gray-500 text-xs">LOCKED</span>
+        )}
+      </div>
+    </div>
+  );
 }
 
 function AchievementCard({ achievement, index }) {
@@ -61,6 +125,16 @@ function AchievementCard({ achievement, index }) {
           <p className={`text-sm ${achievement.unlocked ? 'text-gray-300' : 'text-gray-500'}`}>
             {achievement.description}
           </p>
+
+          {/* Reward preview badge */}
+          {achievement.reward && !showDetails && (
+            <div className="mt-2 inline-flex items-center gap-1 px-2 py-1 bg-black/30 rounded text-xs">
+              <span>{achievement.reward.type === 'gold' ? '💰' : achievement.reward.type === 'relic' ? '💎' : '🎁'}</span>
+              <span className={achievement.unlocked ? 'text-amber-400' : 'text-gray-500'}>
+                {achievement.reward.type === 'gold' ? `${achievement.reward.amount}g` : 'Relic'}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Unlocked badge */}
@@ -75,18 +149,22 @@ function AchievementCard({ achievement, index }) {
         )}
       </div>
 
-      {/* Reward info (if any) */}
-      {achievement.reward && showDetails && (
-        <motion.div
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: 'auto' }}
-          className="mt-3 pt-3 border-t border-white/10"
-        >
-          <div className="text-sm text-amber-400">
-            Reward: {achievement.reward}
-          </div>
-        </motion.div>
-      )}
+      {/* Reward info (expanded) */}
+      <AnimatePresence>
+        {achievement.reward && showDetails && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+          >
+            <RewardDisplay
+              reward={achievement.reward}
+              unlocked={achievement.unlocked}
+              rewardClaimed={achievement.rewardClaimed}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }
@@ -98,7 +176,7 @@ export default function AchievementsScreen({ onClose }) {
   const [playerProgress, setPlayerProgress] = useState(null);
 
   useEffect(() => {
-    const allAchievements = getAllAchievements();
+    const allAchievements = getAchievementsWithRewards();
     setAchievements(allAchievements);
     setMetaProgress(getMetaProgress());
     setPlayerProgress(loadProgression());
