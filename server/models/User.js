@@ -16,6 +16,20 @@ const userSchema = new mongoose.Schema({
   // Permanent currency (persists between runs)
   permanentGold: { type: Number, default: 0 },
 
+  // Relic Collection System
+  relicCollection: {
+    // Relics discovered during runs (unlock availability for purchase)
+    discovered: { type: [String], default: [] },
+    // Relics owned (purchased from discovered pool)
+    owned: { type: [String], default: [] },
+    // Relics equipped for next run (limited by slots)
+    equipped: { type: [String], default: [] },
+    // Number of relic slots available (starts at 1, can be purchased)
+    slots: { type: Number, default: 1 },
+    // Slot upgrade history (for pricing)
+    slotsPurchased: { type: Number, default: 0 }
+  },
+
   // Unlocks
   unlockedStarters: {
     type: [String],
