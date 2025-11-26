@@ -50,6 +50,10 @@ export const RELIC_EFFECTS = {
   XP_SHARE: 'xp_share',
   LEVEL_BOOST: 'level_boost',
   START_STAT_BOOST: 'start_stat_boost', // Boost stats at battle start
+  
+  // Synergy / Build Defining
+  TYPE_CONVERSION: 'type_conversion', // Convert Normal moves to X type
+  CONDITIONAL_DAMAGE: 'conditional_damage', // Bonus damage if condition met
 };
 
 // All relics defined
@@ -208,6 +212,49 @@ export const RELICS = {
     description: '+25% gold from battles',
     effect: { type: RELIC_EFFECTS.GOLD_BONUS, value: 0.25 },
     flavor: 'Ancient treasure of immense value.',
+  },
+
+  // ============================================
+  // SYNERGY RELICS (NEW)
+  // ============================================
+  inferno_soul: {
+    id: 'inferno_soul',
+    name: 'Inferno Soul',
+    icon: '🔥',
+    tier: RELIC_TIERS.RARE,
+    description: 'Normal moves become Fire type and deal 20% more damage',
+    effect: { type: RELIC_EFFECTS.TYPE_CONVERSION, from: 'normal', to: 'fire', boost: 0.20 },
+    flavor: 'Your spirit burns with an intense heat.',
+  },
+
+  storm_soul: {
+    id: 'storm_soul',
+    name: 'Storm Soul',
+    icon: '⚡',
+    tier: RELIC_TIERS.RARE,
+    description: 'Normal moves become Electric type and deal 20% more damage',
+    effect: { type: RELIC_EFFECTS.TYPE_CONVERSION, from: 'normal', to: 'electric', boost: 0.20 },
+    flavor: 'Lightning courses through your veins.',
+  },
+
+  toxic_gland: {
+    id: 'toxic_gland',
+    name: 'Toxic Gland',
+    icon: '🤢',
+    tier: RELIC_TIERS.UNCOMMON,
+    description: 'Deal 30% more damage to Poisoned enemies',
+    effect: { type: RELIC_EFFECTS.CONDITIONAL_DAMAGE, condition: 'status_poisoned', value: 0.30 },
+    flavor: 'Reacts violently to toxins.',
+  },
+
+  executioners_axe: {
+    id: 'executioners_axe',
+    name: "Executioner's Axe",
+    icon: '🪓',
+    tier: RELIC_TIERS.RARE,
+    description: 'Deal 50% more damage to enemies below 50% HP',
+    effect: { type: RELIC_EFFECTS.CONDITIONAL_DAMAGE, condition: 'target_low_hp', threshold: 0.5, value: 0.50 },
+    flavor: 'Mercy is not an option.',
   },
 
   // ============================================
@@ -631,6 +678,8 @@ export function calculateRelicBonuses(relics) {
     start_stat_boost: 0,
     revive_once: false,
     rare_enemy: 0,
+    type_conversion: [], // Array of conversion objects
+    conditional_damage: [], // Array of conditional damage objects
   };
 
   relics.forEach(relic => {
@@ -647,8 +696,14 @@ export function calculateRelicBonuses(relics) {
       RELIC_EFFECTS.XP_SHARE
     ];
 
+    // Array effects (Synergy)
+    if (effect.type === RELIC_EFFECTS.TYPE_CONVERSION) {
+      bonuses.type_conversion.push(effect);
+    } else if (effect.type === RELIC_EFFECTS.CONDITIONAL_DAMAGE) {
+      bonuses.conditional_damage.push(effect);
+    }
     // Primary effect
-    if (booleanEffects.includes(effect.type)) {
+    else if (booleanEffects.includes(effect.type)) {
       bonuses[effect.type] = true;
     } else if (bonuses[effect.type] !== undefined) {
       bonuses[effect.type] += effect.value;
@@ -703,6 +758,35 @@ export function applyRelicBonusesToTeam(team, relics) {
   });
 }
 
+// Apply relic stat bonuses to a single Pokemon (for newly caught Pokemon)
+export function applyRelicBonusesToPokemon(pokemon, relics) {
+  if (!pokemon || !relics || relics.length === 0) return pokemon;
+
+  const bonuses = calculateRelicBonuses(relics);
+
+  const totalAttackBonus = bonuses.attack_bonus + bonuses.all_stats;
+  const totalDefenseBonus = bonuses.defense_bonus + bonuses.all_stats;
+  const totalSpeedBonus = bonuses.speed_bonus + bonuses.all_stats;
+  const totalHpBonus = bonuses.hp_bonus;
+  const totalSpAttackBonus = bonuses.special_attack_bonus + bonuses.all_stats;
+  const totalSpDefenseBonus = bonuses.special_defense_bonus + bonuses.all_stats;
+
+  return {
+    ...pokemon,
+    stats: {
+      ...pokemon.stats,
+      attack: pokemon.stats.attack + totalAttackBonus,
+      defense: pokemon.stats.defense + totalDefenseBonus,
+      special_attack: pokemon.stats.special_attack + totalSpAttackBonus,
+      special_defense: pokemon.stats.special_defense + totalSpDefenseBonus,
+      speed: pokemon.stats.speed + totalSpeedBonus,
+      hp: pokemon.stats.hp + totalHpBonus,
+      hp_max: pokemon.stats.hp_max + totalHpBonus,
+    },
+    relicBonusesApplied: true,
+  };
+}
+
 // Get tier color
 export function getRelicTierColor(tier) {
   const colors = {
@@ -723,5 +807,6 @@ export default {
   getRelicById,
   calculateRelicBonuses,
   applyRelicBonusesToTeam,
+  applyRelicBonusesToPokemon,
   getRelicTierColor,
 };

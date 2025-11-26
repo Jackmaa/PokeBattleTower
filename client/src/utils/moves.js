@@ -1,5 +1,6 @@
 // 📁 moves.js
 // Pokemon moves database with power, accuracy, PP, type, targeting, and priority
+// Now with SKILL LEVELING system (+1 to +5 upgrades)!
 
 // Move target types
 export const TARGET_TYPES = {
@@ -23,6 +24,117 @@ export const EFFECT_TYPES = {
   TEAM_BUFF: 'team_buff',
   FLINCH: 'flinch',
 };
+
+// ============================================
+// SKILL LEVELING SYSTEM
+// ============================================
+export const MAX_SKILL_LEVEL = 5;
+
+/**
+ * Get the bonus stats for a move at a given level
+ * Level 0 = base, Level 1-5 = upgrades
+ */
+export function getSkillLevelBonus(level = 0) {
+  if (level <= 0) return { power: 0, accuracy: 0, effectChance: 0, pp: 0 };
+
+  // Each level adds incremental bonuses
+  return {
+    power: level * 8,           // +8, +16, +24, +32, +40 power
+    accuracy: level * 2,        // +2%, +4%, +6%, +8%, +10% accuracy
+    effectChance: level * 5,    // +5%, +10%, +15%, +20%, +25% effect chance
+    pp: level,                  // +1, +2, +3, +4, +5 PP
+  };
+}
+
+/**
+ * Apply skill level bonuses to a move
+ * Returns a new move object with enhanced stats
+ */
+export function getEnhancedMove(move) {
+  if (!move) return null;
+
+  const level = move.skillLevel || 0;
+  if (level <= 0) return move;
+
+  const bonus = getSkillLevelBonus(level);
+
+  const enhanced = {
+    ...move,
+    // Enhanced base stats
+    power: move.power > 0 ? move.power + bonus.power : move.power,
+    accuracy: Math.min(100, move.accuracy + bonus.accuracy),
+    pp: move.pp + bonus.pp,
+    maxPP: move.maxPP + bonus.pp,
+    // Track original values for display
+    _basePower: moves[move.id]?.power || move.power,
+    _baseAccuracy: moves[move.id]?.accuracy || move.accuracy,
+    _basePP: moves[move.id]?.pp || move.pp,
+  };
+
+  // Enhance effect chance if move has an effect
+  if (enhanced.effect && enhanced.effect.chance && enhanced.effect.chance < 100) {
+    enhanced.effect = {
+      ...enhanced.effect,
+      chance: Math.min(100, enhanced.effect.chance + bonus.effectChance),
+      _baseChance: move.effect.chance,
+    };
+  }
+
+  return enhanced;
+}
+
+/**
+ * Level up a skill on a Pokemon
+ * Returns the updated Pokemon with the leveled skill
+ */
+export function levelUpSkill(pokemon, moveIndex) {
+  if (!pokemon.moves || !pokemon.moves[moveIndex]) return pokemon;
+
+  const move = pokemon.moves[moveIndex];
+  const currentLevel = move.skillLevel || 0;
+
+  if (currentLevel >= MAX_SKILL_LEVEL) {
+    return { success: false, pokemon, message: 'Skill already at max level!' };
+  }
+
+  const newMoves = [...pokemon.moves];
+  newMoves[moveIndex] = {
+    ...move,
+    skillLevel: currentLevel + 1,
+    // Recalculate enhanced stats
+    ...getEnhancedMove({ ...move, skillLevel: currentLevel + 1 }),
+  };
+
+  return {
+    success: true,
+    pokemon: { ...pokemon, moves: newMoves },
+    newLevel: currentLevel + 1,
+    message: `${move.name} leveled up to +${currentLevel + 1}!`,
+  };
+}
+
+/**
+ * Get skill level display name
+ */
+export function getSkillLevelDisplay(level) {
+  if (!level || level <= 0) return '';
+  return `+${level}`;
+}
+
+/**
+ * Get skill level color for UI
+ */
+export function getSkillLevelColor(level) {
+  if (!level || level <= 0) return null;
+  const colors = {
+    1: '#60a5fa', // blue
+    2: '#34d399', // green
+    3: '#fbbf24', // yellow
+    4: '#f97316', // orange
+    5: '#ef4444', // red (max)
+  };
+  return colors[level] || colors[1];
+}
 
 export const moves = {
   // ============================================
@@ -1181,6 +1293,275 @@ export const moves = {
     effect: { type: 'status', status: 'poisoned', chance: 30 },
     description: "The target is stabbed with a tentacle or arm steeped in poison. May also poison.",
   },
+
+  // ============================================
+  // OVERPOWERED / LEGENDARY MOVES
+  // These are rare, powerful moves with devastating effects
+  // ============================================
+
+  // JUDGEMENT - The ultimate Normal move
+  judgement: {
+    name: "Judgement",
+    type: "normal",
+    power: 150,
+    accuracy: 100,
+    pp: 5,
+    maxPP: 5,
+    category: "special",
+    target: TARGET_TYPES.ALL_ENEMIES,
+    priority: 0,
+    description: "Divine light judges all foes. Devastating power with perfect accuracy.",
+  },
+
+  // DOOM DESIRE - Delayed but devastating
+  doomDesire: {
+    name: "Doom Desire",
+    type: "steel",
+    power: 140,
+    accuracy: 100,
+    pp: 5,
+    maxPP: 5,
+    category: "special",
+    target: TARGET_TYPES.SINGLE_ENEMY,
+    priority: 0,
+    effect: { type: 'stat_change', stat: 'defense', stages: -2, chance: 50 },
+    description: "A concentrated beam of light strikes the target, potentially shattering defenses.",
+  },
+
+  // BLUE FLARE - Reshiram's signature
+  blueFlare: {
+    name: "Blue Flare",
+    type: "fire",
+    power: 130,
+    accuracy: 85,
+    pp: 5,
+    maxPP: 5,
+    category: "special",
+    target: TARGET_TYPES.SINGLE_ENEMY,
+    priority: 0,
+    effect: { type: 'status', status: 'burned', chance: 50 },
+    description: "A beautiful yet deadly blue flame. High chance to burn.",
+  },
+
+  // BOLT STRIKE - Zekrom's signature
+  boltStrike: {
+    name: "Bolt Strike",
+    type: "electric",
+    power: 130,
+    accuracy: 85,
+    pp: 5,
+    maxPP: 5,
+    category: "physical",
+    target: TARGET_TYPES.SINGLE_ENEMY,
+    priority: 0,
+    effect: { type: 'status', status: 'paralyzed', chance: 50 },
+    description: "A devastating lightning strike. High chance to paralyze.",
+  },
+
+  // GLACIATE - Kyurem's signature
+  glaciate: {
+    name: "Glaciate",
+    type: "ice",
+    power: 120,
+    accuracy: 95,
+    pp: 8,
+    maxPP: 8,
+    category: "special",
+    target: TARGET_TYPES.ALL_ENEMIES,
+    priority: 0,
+    effect: { type: 'status', status: 'frozen', chance: 30 },
+    description: "Flash-freezing winds hit all foes. May freeze multiple targets.",
+  },
+
+  // V-CREATE - Victini's signature
+  vCreate: {
+    name: "V-Create",
+    type: "fire",
+    power: 180,
+    accuracy: 95,
+    pp: 5,
+    maxPP: 5,
+    category: "physical",
+    target: TARGET_TYPES.SINGLE_ENEMY,
+    priority: 0,
+    effect: { type: 'stat_change', stats: ['defense', 'special_defense', 'speed'], stages: -1, self: true },
+    description: "The ultimate fire attack. Lowers user's Def, Sp.Def, and Speed.",
+  },
+
+  // ORIGIN PULSE - Kyogre's signature
+  originPulse: {
+    name: "Origin Pulse",
+    type: "water",
+    power: 110,
+    accuracy: 85,
+    pp: 10,
+    maxPP: 10,
+    category: "special",
+    target: TARGET_TYPES.ALL_ENEMIES,
+    priority: 0,
+    description: "Attacks with myriad waves of primordial water. Hits all enemies.",
+  },
+
+  // PRECIPICE BLADES - Groudon's signature
+  precipiceBlades: {
+    name: "Precipice Blades",
+    type: "ground",
+    power: 120,
+    accuracy: 85,
+    pp: 10,
+    maxPP: 10,
+    category: "physical",
+    target: TARGET_TYPES.ALL_ENEMIES,
+    priority: 0,
+    description: "Fearsome blades of stone attack all foes. Devastating ground attack.",
+  },
+
+  // DRAGON ASCENT - Rayquaza's signature
+  dragonAscent: {
+    name: "Dragon Ascent",
+    type: "flying",
+    power: 120,
+    accuracy: 100,
+    pp: 5,
+    maxPP: 5,
+    category: "physical",
+    target: TARGET_TYPES.SINGLE_ENEMY,
+    priority: 0,
+    effect: { type: 'stat_change', stats: ['defense', 'special_defense'], stages: -1, self: true },
+    description: "Soars skyward then strikes. Slightly lowers defenses.",
+  },
+
+  // SOUL SIPHON - A dark energy drain
+  soulSiphon: {
+    name: "Soul Siphon",
+    type: "ghost",
+    power: 100,
+    accuracy: 100,
+    pp: 10,
+    maxPP: 10,
+    category: "special",
+    target: TARGET_TYPES.SINGLE_ENEMY,
+    priority: 0,
+    effect: { type: 'heal', percent: 50, drainDamage: true },
+    description: "Drains the target's life force. Heals 50% of damage dealt.",
+  },
+
+  // OBLIVION WING - Yveltal's signature
+  oblivionWing: {
+    name: "Oblivion Wing",
+    type: "flying",
+    power: 80,
+    accuracy: 100,
+    pp: 10,
+    maxPP: 10,
+    category: "special",
+    target: TARGET_TYPES.ALL_ENEMIES,
+    priority: 0,
+    effect: { type: 'heal', percent: 75, drainDamage: true },
+    description: "A wave of destruction. Heals 75% of damage dealt to all targets.",
+  },
+
+  // THOUSAND ARROWS - Ground move that hits flying
+  thousandArrows: {
+    name: "Thousand Arrows",
+    type: "ground",
+    power: 90,
+    accuracy: 100,
+    pp: 10,
+    maxPP: 10,
+    category: "physical",
+    target: TARGET_TYPES.ALL_ENEMIES,
+    priority: 0,
+    effect: { type: 'ground', hitsFlying: true },
+    description: "Arrows of earth hit all foes. Can hit Flying types!",
+  },
+
+  // PHOTON GEYSER - Necrozma's signature
+  photonGeyser: {
+    name: "Photon Geyser",
+    type: "psychic",
+    power: 100,
+    accuracy: 100,
+    pp: 5,
+    maxPP: 5,
+    category: "special",
+    target: TARGET_TYPES.SINGLE_ENEMY,
+    priority: 0,
+    effect: { type: 'adaptive' }, // Uses higher attack stat
+    description: "A light pillar erupts. Uses the higher attack stat.",
+  },
+
+  // ETERNABEAM - Eternatus' signature
+  eternabeam: {
+    name: "Eternabeam",
+    type: "dragon",
+    power: 160,
+    accuracy: 90,
+    pp: 5,
+    maxPP: 5,
+    category: "special",
+    target: TARGET_TYPES.SINGLE_ENEMY,
+    priority: 0,
+    description: "Infinite energy in concentrated form. Extreme power.",
+  },
+
+  // ASTRAL BARRAGE - Spectrier's signature
+  astralBarrage: {
+    name: "Astral Barrage",
+    type: "ghost",
+    power: 120,
+    accuracy: 100,
+    pp: 5,
+    maxPP: 5,
+    category: "special",
+    target: TARGET_TYPES.ALL_ENEMIES,
+    priority: 0,
+    description: "Ghostly spirits assault all foes simultaneously.",
+  },
+
+  // INFERNO OVERDRIVE - Z-Move style fire attack
+  infernoOverdrive: {
+    name: "Inferno Overdrive",
+    type: "fire",
+    power: 200,
+    accuracy: 100,
+    pp: 1,
+    maxPP: 1,
+    category: "special",
+    target: TARGET_TYPES.ALL_ENEMIES,
+    priority: 0,
+    effect: { type: 'status', status: 'burned', chance: 100 },
+    description: "Ultimate fire attack. Burns all targets. Single use per battle.",
+  },
+
+  // HYDRO VORTEX - Z-Move style water attack
+  hydroVortex: {
+    name: "Hydro Vortex",
+    type: "water",
+    power: 200,
+    accuracy: 100,
+    pp: 1,
+    maxPP: 1,
+    category: "special",
+    target: TARGET_TYPES.ALL_ENEMIES,
+    priority: 0,
+    description: "Creates a massive water vortex. Ultimate water attack. Single use.",
+  },
+
+  // GIGAVOLT HAVOC - Z-Move style electric
+  gigavoltHavoc: {
+    name: "Gigavolt Havoc",
+    type: "electric",
+    power: 200,
+    accuracy: 100,
+    pp: 1,
+    maxPP: 1,
+    category: "special",
+    target: TARGET_TYPES.ALL_ENEMIES,
+    priority: 0,
+    effect: { type: 'status', status: 'paralyzed', chance: 100 },
+    description: "Massive electric discharge. Paralyzes all. Single use per battle.",
+  },
 };
 
 // Extended move pools for each type (includes new moves)
@@ -1250,17 +1631,60 @@ export function getMovesByType(pokemonType) {
   }));
 }
 
-// Generate random moves for a Pokemon
+// Generate random moves for a Pokemon - NOW USES BOTH TYPES!
 export function generatePokemonMoves(pokemon) {
   const primaryType = pokemon.types?.[0]?.toLowerCase() || "normal";
-  const availableMoves = getMovesByType(primaryType);
+  const secondaryType = pokemon.types?.[1]?.toLowerCase() || null;
 
-  // Select 4 moves (or all if less than 4 available)
-  const selectedMoves = availableMoves.slice(0, 4);
+  // Get moves from primary type pool
+  const primaryPool = TYPE_MOVE_POOLS[primaryType] || TYPE_MOVE_POOLS.normal;
 
-  return selectedMoves.map((move) => ({
-    ...move,
-    pp: move.maxPP, // Start with full PP
+  // Get moves from secondary type pool (if exists)
+  const secondaryPool = secondaryType ? (TYPE_MOVE_POOLS[secondaryType] || []) : [];
+
+  // Build moveset: prioritize 2-3 from primary, 1-2 from secondary (if available)
+  const selectedMoveIds = [];
+  const usedIds = new Set();
+
+  // Pick 2-3 moves from primary type
+  const primaryMoveCount = secondaryPool.length > 0 ? 2 : 4;
+  for (const moveId of primaryPool) {
+    if (selectedMoveIds.length >= primaryMoveCount) break;
+    if (!usedIds.has(moveId) && moves[moveId]) {
+      selectedMoveIds.push(moveId);
+      usedIds.add(moveId);
+    }
+  }
+
+  // Pick 1-2 moves from secondary type (for dual-type Pokemon)
+  if (secondaryPool.length > 0) {
+    const secondaryMoveCount = 4 - selectedMoveIds.length;
+    for (const moveId of secondaryPool) {
+      if (selectedMoveIds.length >= 4) break;
+      if (!usedIds.has(moveId) && moves[moveId]) {
+        selectedMoveIds.push(moveId);
+        usedIds.add(moveId);
+      }
+    }
+  }
+
+  // Fill remaining slots with normal moves if needed
+  if (selectedMoveIds.length < 4) {
+    const normalPool = TYPE_MOVE_POOLS.normal || [];
+    for (const moveId of normalPool) {
+      if (selectedMoveIds.length >= 4) break;
+      if (!usedIds.has(moveId) && moves[moveId]) {
+        selectedMoveIds.push(moveId);
+        usedIds.add(moveId);
+      }
+    }
+  }
+
+  // Convert to move objects with full PP
+  return selectedMoveIds.map((moveId) => ({
+    id: moveId,
+    ...moves[moveId],
+    pp: moves[moveId].maxPP,
   }));
 }
 

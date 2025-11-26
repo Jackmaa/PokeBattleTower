@@ -49,6 +49,7 @@ function TalentNode({ talent, rank, maxRank, canUpgrade, onUpgrade, branchColor 
   const [showTooltip, setShowTooltip] = useState(false);
   const isMaxed = rank >= maxRank;
   const isUnlocked = rank > 0;
+  const isActiveSkill = talent.isActive;
 
   const description = talent.description.replace('{value}', talent.valuePerRank * (rank || 1));
 
@@ -56,14 +57,15 @@ function TalentNode({ talent, rank, maxRank, canUpgrade, onUpgrade, branchColor 
     <div className="relative">
       <motion.button
         className={`
-          relative w-14 h-14 rounded-xl border-2 flex items-center justify-center
+          relative w-14 h-14 flex items-center justify-center
           transition-all duration-200 cursor-pointer
+          ${isActiveSkill ? 'rounded-full border-4' : 'rounded-xl border-2'}
           ${isMaxed ? 'border-yellow-400 bg-yellow-500/20' : ''}
           ${isUnlocked && !isMaxed ? 'border-opacity-100' : 'border-opacity-40'}
           ${canUpgrade ? 'hover:scale-110 hover:shadow-lg' : 'opacity-60'}
         `}
         style={{
-          borderColor: branchColor,
+          borderColor: isMaxed ? '#facc15' : branchColor,
           backgroundColor: isUnlocked ? `${branchColor}20` : 'transparent',
         }}
         whileHover={canUpgrade ? { scale: 1.1 } : {}}
@@ -76,7 +78,7 @@ function TalentNode({ talent, rank, maxRank, canUpgrade, onUpgrade, branchColor 
 
         {/* Rank indicator */}
         <div
-          className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full text-xs font-bold flex items-center justify-center"
+          className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full text-xs font-bold flex items-center justify-center border border-gray-900"
           style={{
             backgroundColor: isMaxed ? '#eab308' : branchColor,
             color: 'white'
@@ -85,10 +87,17 @@ function TalentNode({ talent, rank, maxRank, canUpgrade, onUpgrade, branchColor 
           {rank}/{maxRank}
         </div>
 
+        {/* Active Skill Indicator */}
+        {isActiveSkill && (
+          <div className="absolute -top-2 -right-2 text-xs bg-black/80 text-white px-1.5 rounded-full border border-white/20">
+            SKILL
+          </div>
+        )}
+
         {/* Glow effect when maxed */}
         {isMaxed && (
           <motion.div
-            className="absolute inset-0 rounded-xl"
+            className={`absolute inset-0 ${isActiveSkill ? 'rounded-full' : 'rounded-xl'}`}
             style={{ boxShadow: `0 0 15px ${branchColor}` }}
             animate={{ opacity: [0.5, 1, 0.5] }}
             transition={{ duration: 2, repeat: Infinity }}
@@ -106,12 +115,17 @@ function TalentNode({ talent, rank, maxRank, canUpgrade, onUpgrade, branchColor 
             className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 z-50"
           >
             <div
-              className="bg-gray-900 border rounded-lg p-3 w-48 text-center shadow-xl"
+              className="bg-gray-900 border rounded-lg p-3 w-56 text-center shadow-xl backdrop-blur-md"
               style={{ borderColor: branchColor }}
             >
-              <div className="font-bold text-white mb-1">{talent.name}</div>
-              <div className="text-sm text-gray-300 mb-2">{description}</div>
-              <div className="text-xs text-gray-400">
+              <div className="font-bold text-white mb-1 flex items-center justify-center gap-2">
+                {talent.name}
+                {isActiveSkill && (
+                  <span className="text-[10px] bg-blue-600 text-white px-1 rounded uppercase">Active</span>
+                )}
+              </div>
+              <div className="text-sm text-gray-300 mb-2 leading-tight">{description}</div>
+              <div className="text-xs text-gray-400 border-t border-gray-700 pt-2 mt-2">
                 Tier {talent.tier} • Requires Lv.{talent.levelRequired}
               </div>
               {talent.requires.length > 0 && (

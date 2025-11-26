@@ -1,71 +1,40 @@
 import React from "react";
 import { motion } from "framer-motion";
 
-export default function HealthBar({ current, max, showText = true, animated = true }) {
+export default function HealthBar({ current, max, showText = true, animated = true, className = "" }) {
   const ratio = Math.max(0, Math.min(current / max, 1));
-  const percent = Math.floor(ratio * 100);
-
-  // Color gradient based on health percentage
-  let barColor = "#10b981"; // green (gaming-success)
-  let gradientColor = "#34d399";
-  if (percent <= 50) {
-    barColor = "#f59e0b"; // yellow (gaming-warning)
-    gradientColor = "#fbbf24";
-  }
-  if (percent <= 25) {
-    barColor = "#ef4444"; // red (gaming-danger)
-    gradientColor = "#f87171";
-  }
+  const percentage = Math.floor(ratio * 100);
+  const isLow = percentage <= 25;
 
   return (
-    <div className="relative w-full">
-      {/* Background container */}
-      <div className="relative h-6 bg-black/40 rounded-full overflow-hidden border border-white/20">
-        {/* Health bar with gradient */}
-        <motion.div
-          className="h-full rounded-full"
-          style={{
-            background: `linear-gradient(90deg, ${barColor}, ${gradientColor})`,
-            boxShadow: `0 0 10px ${barColor}`,
-          }}
-          initial={animated ? { width: 0 } : { width: `${percent}%` }}
-          animate={{ width: `${percent}%` }}
-          transition={{
-            type: "spring",
-            stiffness: 100,
-            damping: 15,
-          }}
+    <div className={`w-full ${className}`}>
+      <div className="relative h-4 bg-black/40 rounded-full overflow-hidden border border-white/20 shadow-inner">
+        {/* Background pulse for low health */}
+        <motion.div 
+          className="absolute inset-0 bg-neon-danger/20"
+          animate={{ opacity: isLow ? [0, 0.5, 0] : 0 }}
+          transition={{ duration: 1, repeat: Infinity }}
         />
-
-        {/* Shine effect overlay */}
-        <div
-          className="absolute inset-0 rounded-full"
-          style={{
-            background: "linear-gradient(180deg, rgba(255,255,255,0.3) 0%, transparent 50%, rgba(0,0,0,0.2) 100%)",
-            pointerEvents: "none",
-          }}
-        />
-
-        {/* HP Text */}
-        {showText && (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-xs font-bold text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
-              {current}/{max}
-            </span>
-          </div>
-        )}
-      </div>
-
-      {/* Percentage indicator (optional) */}
-      {percent <= 25 && (
+        
         <motion.div
-          className="absolute -top-1 -right-1 bg-gaming-danger text-white text-xs font-bold px-1.5 py-0.5 rounded-full"
-          initial={{ scale: 0 }}
-          animate={{ scale: [1, 1.2, 1] }}
-          transition={{ repeat: Infinity, duration: 1 }}
+          className={`h-full relative rounded-full ${
+            isLow ? "bg-neon-danger shadow-[0_0_10px_var(--accent-danger)]" : 
+            percentage < 50 ? "bg-neon-gold shadow-[0_0_10px_var(--accent-gold)]" : 
+            "bg-neon-emerald shadow-[0_0_10px_var(--accent-emerald)]"
+          }`}
+          initial={animated ? { width: "0%" } : { width: `${percentage}%` }}
+          animate={{ width: `${percentage}%` }}
+          transition={{ type: "spring", stiffness: 100, damping: 20 }}
         >
-          !
+            {/* Shine effect */}
+            <div className="absolute top-0 right-0 bottom-0 w-full bg-gradient-to-b from-white/30 to-transparent opacity-50" />
         </motion.div>
+      </div>
+      
+      {showText && (
+        <div className="text-[10px] font-mono font-bold text-white/80 mt-1 text-right drop-shadow-md tracking-wider">
+          {current} / {max}
+        </div>
       )}
     </div>
   );

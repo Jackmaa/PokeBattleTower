@@ -97,124 +97,161 @@ export const TALENT_BRANCHES = {
   MASTERY: 'mastery',
 };
 
+export const TRAINER_SKILLS = {
+  heal: {
+    id: 'heal',
+    name: 'Emergency Heal',
+    icon: '💚',
+    description: 'Heal your active Pokémon for 50% HP.',
+    cooldown: 2, // Floors
+    effect: { type: 'heal', percent: 50 },
+  },
+  enrage: {
+    id: 'enrage',
+    name: 'Enrage',
+    icon: '😡',
+    description: 'Your Pokémon deals 50% more damage this turn.',
+    cooldown: 1, // Floors
+    effect: { type: 'buff', stat: 'damage', value: 0.5, duration: 1 },
+  },
+  shield: {
+    id: 'shield',
+    name: 'Energy Shield',
+    icon: '🛡️',
+    description: 'Reduce incoming damage by 75% this turn.',
+    cooldown: 2, // Floors
+    effect: { type: 'buff', stat: 'damage_reduction', value: 0.75, duration: 1 },
+  },
+  refresh: {
+    id: 'refresh',
+    name: 'Refresh',
+    icon: '✨',
+    description: 'Cure all status effects on your active Pokémon.',
+    cooldown: 1, // Floors
+    effect: { type: 'cure_status' },
+  },
+};
+
 export const TALENTS = {
-  // ========== COMBAT BRANCH ==========
-  // Tier 1 (Level 1+)
-  sharp_claws: {
-    id: 'sharp_claws',
-    name: 'Sharp Claws',
+  // ========== COMBAT BRANCH (Offense & Active Skills) ==========
+  // Tier 1
+  training_regimen: {
+    id: 'training_regimen',
+    name: 'Training Regimen',
     branch: TALENT_BRANCHES.COMBAT,
     tier: 1,
     maxRank: 5,
     icon: '⚔️',
-    description: 'Increase physical attack damage by {value}%',
-    valuePerRank: 2,
-    effect: (rank) => ({ attack_bonus: rank * 0.02 }),
+    description: 'Increase all damage dealt by {value}%',
+    valuePerRank: 5,
+    effect: (rank) => ({ damage_bonus: rank * 0.05 }),
     requires: [],
     levelRequired: 1,
   },
-
-  focus_energy: {
-    id: 'focus_energy',
-    name: 'Focus Energy',
+  
+  unlock_enrage: {
+    id: 'unlock_enrage',
+    name: 'Skill: Enrage',
     branch: TALENT_BRANCHES.COMBAT,
     tier: 1,
-    maxRank: 5,
-    icon: '🎯',
-    description: 'Increase critical hit chance by {value}%',
+    maxRank: 1,
+    icon: '😡',
+    description: 'Unlock Active Skill: Enrage (Deal +50% dmg for 1 turn)',
     valuePerRank: 1,
-    effect: (rank) => ({ crit_chance: rank * 0.01 }),
+    effect: (rank) => ({ unlock_skill: 'enrage' }),
     requires: [],
-    levelRequired: 1,
+    levelRequired: 2,
+    isActive: true,
   },
 
-  // Tier 2 (Level 5+)
-  type_specialist: {
-    id: 'type_specialist',
-    name: 'Type Specialist',
+  // Tier 2
+  critical_eye: {
+    id: 'critical_eye',
+    name: 'Critical Eye',
     branch: TALENT_BRANCHES.COMBAT,
     tier: 2,
     maxRank: 3,
-    icon: '🔮',
-    description: 'Super effective moves deal {value}% more damage',
+    icon: '🎯',
+    description: 'Increase Critical Hit Chance by {value}%',
     valuePerRank: 5,
-    effect: (rank) => ({ super_effective_bonus: rank * 0.05 }),
-    requires: ['sharp_claws'],
+    effect: (rank) => ({ crit_chance: rank * 0.05 }),
+    requires: ['training_regimen'],
     levelRequired: 5,
   },
 
-  fierce_strikes: {
-    id: 'fierce_strikes',
-    name: 'Fierce Strikes',
+  executioner: {
+    id: 'executioner',
+    name: 'Executioner',
     branch: TALENT_BRANCHES.COMBAT,
     tier: 2,
     maxRank: 3,
-    icon: '💥',
-    description: 'Critical hits deal {value}% more damage',
+    icon: '🪓',
+    description: 'Deal {value}% more damage to enemies below 50% HP',
     valuePerRank: 10,
-    effect: (rank) => ({ crit_damage: rank * 0.1 }),
-    requires: ['focus_energy'],
+    effect: (rank) => ({ low_hp_damage_bonus: rank * 0.1 }),
+    requires: ['unlock_enrage'],
     levelRequired: 5,
   },
 
-  // Tier 3 (Level 10+)
-  combo_master: {
-    id: 'combo_master',
-    name: 'Combo Master',
+  // Tier 3
+  momentum: {
+    id: 'momentum',
+    name: 'Momentum',
     branch: TALENT_BRANCHES.COMBAT,
     tier: 3,
     maxRank: 3,
-    icon: '🔥',
-    description: 'Consecutive attacks on the same target deal {value}% more damage',
-    valuePerRank: 3,
-    effect: (rank) => ({ combo_bonus: rank * 0.03 }),
-    requires: ['type_specialist', 'fierce_strikes'],
+    icon: '⏩',
+    description: 'Gain {value}% Speed every turn in battle (max 5 stacks)',
+    valuePerRank: 5,
+    effect: (rank) => ({ speed_stack: rank * 0.05 }),
+    requires: ['critical_eye'],
     levelRequired: 10,
   },
 
-  // Tier 4 (Level 20+) - Capstone
-  berserker: {
-    id: 'berserker',
-    name: 'Berserker',
+  // Tier 4 (Capstone)
+  warlord: {
+    id: 'warlord',
+    name: 'Warlord',
     branch: TALENT_BRANCHES.COMBAT,
     tier: 4,
     maxRank: 1,
     icon: '👹',
-    description: 'When below 30% HP, deal 25% more damage',
-    valuePerRank: 25,
-    effect: (rank) => ({ low_hp_damage: 0.25 }),
-    requires: ['combo_master'],
+    description: 'Start every battle with +1 Attack Stage',
+    valuePerRank: 1,
+    effect: (rank) => ({ start_battle_buff: { stat: 'attack', stages: 1 } }),
+    requires: ['momentum'],
     levelRequired: 20,
   },
 
-  // ========== SURVIVAL BRANCH ==========
+  // ========== SURVIVAL BRANCH (Defense & Active Skills) ==========
   // Tier 1
-  thick_skin: {
-    id: 'thick_skin',
-    name: 'Thick Skin',
+  thick_hide: {
+    id: 'thick_hide',
+    name: 'Thick Hide',
     branch: TALENT_BRANCHES.SURVIVAL,
     tier: 1,
     maxRank: 5,
     icon: '🛡️',
-    description: 'Increase defense by {value}%',
-    valuePerRank: 2,
-    effect: (rank) => ({ defense_bonus: rank * 0.02 }),
+    description: 'Reduce all damage taken by {value}%',
+    valuePerRank: 3,
+    effect: (rank) => ({ damage_reduction: rank * 0.03 }),
     requires: [],
     levelRequired: 1,
   },
 
-  vitality: {
-    id: 'vitality',
-    name: 'Vitality',
+  unlock_heal: {
+    id: 'unlock_heal',
+    name: 'Skill: Emergency Heal',
     branch: TALENT_BRANCHES.SURVIVAL,
     tier: 1,
-    maxRank: 5,
-    icon: '❤️',
-    description: 'Increase max HP by {value}%',
-    valuePerRank: 3,
-    effect: (rank) => ({ hp_bonus: rank * 0.03 }),
+    maxRank: 1,
+    icon: '💚',
+    description: 'Unlock Active Skill: Heal 50% HP (5 turn cooldown)',
+    valuePerRank: 1,
+    effect: (rank) => ({ unlock_skill: 'heal' }),
     requires: [],
-    levelRequired: 1,
+    levelRequired: 2,
+    isActive: true,
   },
 
   // Tier 2
@@ -224,175 +261,177 @@ export const TALENTS = {
     branch: TALENT_BRANCHES.SURVIVAL,
     tier: 2,
     maxRank: 3,
-    icon: '💚',
-    description: 'Heal {value}% HP after each battle',
-    valuePerRank: 3,
-    effect: (rank) => ({ post_battle_heal: rank * 0.03 }),
-    requires: ['vitality'],
+    icon: '🌿',
+    description: 'Heal {value}% max HP at the start of every turn',
+    valuePerRank: 2,
+    effect: (rank) => ({ turn_heal: rank * 0.02 }),
+    requires: ['thick_hide'],
     levelRequired: 5,
   },
 
-  iron_will: {
-    id: 'iron_will',
-    name: 'Iron Will',
+  unlock_shield: {
+    id: 'unlock_shield',
+    name: 'Skill: Energy Shield',
     branch: TALENT_BRANCHES.SURVIVAL,
     tier: 2,
-    maxRank: 3,
-    icon: '🪨',
-    description: 'Reduce damage from super effective moves by {value}%',
-    valuePerRank: 5,
-    effect: (rank) => ({ resist_super_effective: rank * 0.05 }),
-    requires: ['thick_skin'],
-    levelRequired: 5,
+    maxRank: 1,
+    icon: '🛡️',
+    description: 'Unlock Active Skill: Reduce dmg by 75% for 1 turn',
+    valuePerRank: 1,
+    effect: (rank) => ({ unlock_skill: 'shield' }),
+    requires: ['unlock_heal'],
+    levelRequired: 8,
+    isActive: true,
   },
 
   // Tier 3
-  second_wind: {
-    id: 'second_wind',
-    name: 'Second Wind',
+  resilience: {
+    id: 'resilience',
+    name: 'Resilience',
     branch: TALENT_BRANCHES.SURVIVAL,
     tier: 3,
     maxRank: 3,
-    icon: '🌬️',
-    description: 'Healing effects are {value}% more effective',
-    valuePerRank: 10,
-    effect: (rank) => ({ healing_bonus: rank * 0.1 }),
-    requires: ['regeneration', 'iron_will'],
+    icon: '🧘',
+    description: 'Status effects last {value} fewer turns (min 1)',
+    valuePerRank: 1,
+    effect: (rank) => ({ status_duration_reduction: rank }),
+    requires: ['regeneration'],
     levelRequired: 10,
   },
 
-  // Tier 4 - Capstone
-  undying: {
-    id: 'undying',
-    name: 'Undying',
+  // Tier 4 (Capstone)
+  immortal: {
+    id: 'immortal',
+    name: 'Immortal',
     branch: TALENT_BRANCHES.SURVIVAL,
     tier: 4,
     maxRank: 1,
     icon: '🔱',
-    description: 'Once per run, survive a fatal blow with 1 HP',
+    description: 'Once per run, revive with 50% HP when defeated',
     valuePerRank: 1,
-    effect: (rank) => ({ cheat_death: true }),
-    requires: ['second_wind'],
+    effect: (rank) => ({ revive_chance: 1.0 }),
+    requires: ['resilience'],
     levelRequired: 20,
   },
 
-  // ========== FORTUNE BRANCH ==========
+  // ========== FORTUNE BRANCH (Economy & Loot) ==========
   // Tier 1
-  gold_digger: {
-    id: 'gold_digger',
-    name: 'Gold Digger',
+  gold_interest: {
+    id: 'gold_interest',
+    name: 'Compound Interest',
     branch: TALENT_BRANCHES.FORTUNE,
     tier: 1,
     maxRank: 5,
-    icon: '💰',
-    description: 'Earn {value}% more gold from battles',
-    valuePerRank: 5,
-    effect: (rank) => ({ gold_bonus: rank * 0.05 }),
+    icon: '📈',
+    description: 'Gain {value}% of your current gold as interest after each floor (max 50)',
+    valuePerRank: 2,
+    effect: (rank) => ({ gold_interest: rank * 0.02 }),
     requires: [],
     levelRequired: 1,
   },
 
-  lucky_find: {
-    id: 'lucky_find',
-    name: 'Lucky Find',
+  bounty_hunter: {
+    id: 'bounty_hunter',
+    name: 'Bounty Hunter',
     branch: TALENT_BRANCHES.FORTUNE,
     tier: 1,
     maxRank: 5,
-    icon: '🍀',
-    description: 'Increase item drop rate by {value}%',
-    valuePerRank: 3,
-    effect: (rank) => ({ item_drop_bonus: rank * 0.03 }),
+    icon: '💰',
+    description: 'Bosses and Elites drop {value}% more gold',
+    valuePerRank: 20,
+    effect: (rank) => ({ elite_gold_bonus: rank * 0.2 }),
     requires: [],
     levelRequired: 1,
   },
 
   // Tier 2
-  treasure_hunter: {
-    id: 'treasure_hunter',
-    name: 'Treasure Hunter',
+  lucky_charm: {
+    id: 'lucky_charm',
+    name: 'Lucky Charm',
     branch: TALENT_BRANCHES.FORTUNE,
     tier: 2,
     maxRank: 3,
-    icon: '🗝️',
-    description: 'Find {value}% more rare items',
-    valuePerRank: 5,
-    effect: (rank) => ({ rare_item_bonus: rank * 0.05 }),
-    requires: ['lucky_find'],
+    icon: '🍀',
+    description: 'Increase chance to find Rare/Epic items by {value}%',
+    valuePerRank: 10,
+    effect: (rank) => ({ rare_drop_chance: rank * 0.1 }),
+    requires: ['gold_interest'],
     levelRequired: 5,
   },
 
-  bargain_hunter: {
-    id: 'bargain_hunter',
-    name: 'Bargain Hunter',
+  discount_card: {
+    id: 'discount_card',
+    name: 'VIP Member',
     branch: TALENT_BRANCHES.FORTUNE,
     tier: 2,
     maxRank: 3,
     icon: '🏷️',
-    description: 'Shop prices reduced by {value}%',
-    valuePerRank: 5,
-    effect: (rank) => ({ shop_discount: rank * 0.05 }),
-    requires: ['gold_digger'],
+    description: 'Shop prices are reduced by {value}%',
+    valuePerRank: 10,
+    effect: (rank) => ({ shop_discount: rank * 0.1 }),
+    requires: ['bounty_hunter'],
     levelRequired: 5,
   },
 
   // Tier 3
-  high_roller: {
-    id: 'high_roller',
-    name: 'High Roller',
+  shiny_hunter: {
+    id: 'shiny_hunter',
+    name: 'Shiny Hunter',
     branch: TALENT_BRANCHES.FORTUNE,
     tier: 3,
     maxRank: 3,
-    icon: '🎰',
-    description: 'Chance for double rewards: {value}%',
-    valuePerRank: 5,
-    effect: (rank) => ({ double_reward_chance: rank * 0.05 }),
-    requires: ['treasure_hunter', 'bargain_hunter'],
+    icon: '✨',
+    description: 'Significantly increase chance to encounter Shiny Pokémon (x{value})',
+    valuePerRank: 2,
+    effect: (rank) => ({ shiny_chance_multiplier: 1 + (rank * 2) }),
+    requires: ['lucky_charm'],
     levelRequired: 10,
   },
 
-  // Tier 4 - Capstone
-  midas_touch: {
-    id: 'midas_touch',
-    name: 'Midas Touch',
+  // Tier 4 (Capstone)
+  tycoon: {
+    id: 'tycoon',
+    name: 'Tycoon',
     branch: TALENT_BRANCHES.FORTUNE,
     tier: 4,
     maxRank: 1,
     icon: '👑',
-    description: 'Start each run with 100 bonus gold',
-    valuePerRank: 100,
-    effect: (rank) => ({ starting_gold: 100 }),
-    requires: ['high_roller'],
+    description: 'You can reroll Shop items and Event choices once per floor',
+    valuePerRank: 1,
+    effect: (rank) => ({ free_reroll: true }),
+    requires: ['shiny_hunter'],
     levelRequired: 20,
   },
 
-  // ========== MASTERY BRANCH ==========
+  // ========== MASTERY BRANCH (Utility & Progression) ==========
   // Tier 1
-  quick_learner: {
-    id: 'quick_learner',
-    name: 'Quick Learner',
+  fast_learner: {
+    id: 'fast_learner',
+    name: 'Fast Learner',
     branch: TALENT_BRANCHES.MASTERY,
     tier: 1,
     maxRank: 5,
     icon: '📚',
-    description: 'Earn {value}% more XP',
-    valuePerRank: 5,
-    effect: (rank) => ({ xp_bonus: rank * 0.05 }),
+    description: 'Gain {value}% more XP from battles',
+    valuePerRank: 10,
+    effect: (rank) => ({ xp_bonus: rank * 0.1 }),
     requires: [],
     levelRequired: 1,
   },
 
-  pokemon_bond: {
-    id: 'pokemon_bond',
-    name: 'Pokémon Bond',
+  unlock_refresh: {
+    id: 'unlock_refresh',
+    name: 'Skill: Refresh',
     branch: TALENT_BRANCHES.MASTERY,
     tier: 1,
-    maxRank: 5,
-    icon: '💕',
-    description: 'Starter Pokémon get {value}% bonus stats',
-    valuePerRank: 2,
-    effect: (rank) => ({ starter_bonus: rank * 0.02 }),
+    maxRank: 1,
+    icon: '✨',
+    description: 'Unlock Active Skill: Cure all status effects (3 turn cooldown)',
+    valuePerRank: 1,
+    effect: (rank) => ({ unlock_skill: 'refresh' }),
     requires: [],
-    levelRequired: 1,
+    levelRequired: 3,
+    isActive: true,
   },
 
   // Tier 2
@@ -403,54 +442,54 @@ export const TALENTS = {
     tier: 2,
     maxRank: 3,
     icon: '📖',
-    description: 'Pokémon start with {value} additional move slot(s)',
+    description: 'Start run with {value} extra random Move Tutor move(s)',
     valuePerRank: 1,
-    effect: (rank) => ({ extra_moves: rank }),
-    requires: ['quick_learner'],
+    effect: (rank) => ({ start_extra_moves: rank }),
+    requires: ['fast_learner'],
     levelRequired: 5,
   },
 
-  team_synergy: {
-    id: 'team_synergy',
-    name: 'Team Synergy',
+  evolution_master: {
+    id: 'evolution_master',
+    name: 'Evolution Master',
     branch: TALENT_BRANCHES.MASTERY,
     tier: 2,
     maxRank: 3,
-    icon: '🤝',
-    description: 'Same-type Pokémon on team get {value}% bonus stats',
-    valuePerRank: 3,
-    effect: (rank) => ({ type_synergy: rank * 0.03 }),
-    requires: ['pokemon_bond'],
+    icon: '🧬',
+    description: 'Evolved Pokémon gain +{value}% stats',
+    valuePerRank: 5,
+    effect: (rank) => ({ evolution_stat_bonus: rank * 0.05 }),
+    requires: ['unlock_refresh'],
     levelRequired: 5,
   },
 
   // Tier 3
-  evolution_expert: {
-    id: 'evolution_expert',
-    name: 'Evolution Expert',
+  synergy_master: {
+    id: 'synergy_master',
+    name: 'Synergy Master',
     branch: TALENT_BRANCHES.MASTERY,
     tier: 3,
     maxRank: 3,
-    icon: '✨',
-    description: 'Evolution stones {value}% more effective',
+    icon: '🤝',
+    description: 'Relic bonuses are {value}% more effective',
     valuePerRank: 10,
-    effect: (rank) => ({ evolution_bonus: rank * 0.1 }),
-    requires: ['move_tutor', 'team_synergy'],
+    effect: (rank) => ({ relic_effectiveness: rank * 0.1 }),
+    requires: ['move_tutor'],
     levelRequired: 10,
   },
 
-  // Tier 4 - Capstone
-  legendary_trainer: {
-    id: 'legendary_trainer',
-    name: 'Legendary Trainer',
+  // Tier 4 (Capstone)
+  legendary_soul: {
+    id: 'legendary_soul',
+    name: 'Legendary Soul',
     branch: TALENT_BRANCHES.MASTERY,
     tier: 4,
     maxRank: 1,
     icon: '🌟',
-    description: 'Start with an extra team slot (4 Pokémon)',
+    description: 'Your Starter Pokémon becomes a "Legendary" variant (Higher stats)',
     valuePerRank: 1,
-    effect: (rank) => ({ extra_team_slot: 1 }),
-    requires: ['evolution_expert'],
+    effect: (rank) => ({ starter_legendary_boost: true }),
+    requires: ['synergy_master'],
     levelRequired: 20,
   },
 };
@@ -472,12 +511,32 @@ export function getTalentPointsForLevel(level) {
 // ============================================
 
 export const STARTER_SHOP = {
-  // Default starters (free)
-  charizard: { price: 0, currency: 'tokens', unlocked: true },
-  blastoise: { price: 0, currency: 'tokens', unlocked: true },
-  venusaur: { price: 0, currency: 'tokens', unlocked: true },
+  // Default starters (free - first stage evolutions)
+  charmander: { price: 0, currency: 'tokens', unlocked: true },
+  squirtle: { price: 0, currency: 'tokens', unlocked: true },
+  bulbasaur: { price: 0, currency: 'tokens', unlocked: true },
 
-  // Purchasable starters
+  // Purchasable starters - Evolved Forms
+  charizard: {
+    price: 100,
+    currency: 'tokens',
+    levelRequired: 10,
+    description: 'The fully evolved Fire/Flying starter - powerful and iconic'
+  },
+  blastoise: {
+    price: 100,
+    currency: 'tokens',
+    levelRequired: 10,
+    description: 'The fully evolved Water starter - defensive powerhouse'
+  },
+  venusaur: {
+    price: 100,
+    currency: 'tokens',
+    levelRequired: 10,
+    description: 'The fully evolved Grass/Poison starter - balanced and versatile'
+  },
+
+  // Other purchasable starters
   pikachu: {
     price: 50,
     currency: 'tokens',
@@ -485,48 +544,48 @@ export const STARTER_SHOP = {
     description: 'The iconic Electric Mouse Pokémon'
   },
   gengar: {
-    price: 100,
+    price: 125,
     currency: 'tokens',
-    levelRequired: 10,
+    levelRequired: 12,
     description: 'A tricky Ghost-type specialist'
   },
   dragonite: {
-    price: 150,
+    price: 175,
     currency: 'tokens',
-    levelRequired: 15,
+    levelRequired: 18,
     description: 'A powerful Dragon-type with great stats'
   },
   tyranitar: {
-    price: 200,
+    price: 225,
     currency: 'tokens',
-    levelRequired: 20,
+    levelRequired: 22,
     description: 'The Armor Pokémon - Dark/Rock powerhouse'
   },
   metagross: {
-    price: 250,
+    price: 275,
     currency: 'tokens',
-    levelRequired: 25,
+    levelRequired: 28,
     description: 'Steel/Psychic pseudo-legendary'
   },
   garchomp: {
-    price: 300,
+    price: 325,
     currency: 'tokens',
-    levelRequired: 30,
+    levelRequired: 32,
     description: 'The ultimate Dragon/Ground predator'
   },
 
   // Premium starters (special)
   lucario: {
-    price: 200,
+    price: 225,
     currency: 'tokens',
-    levelRequired: 15,
+    levelRequired: 18,
     description: 'Aura Pokémon - Fighting/Steel',
     pokedexId: 448,
   },
   salamence: {
-    price: 275,
+    price: 300,
     currency: 'tokens',
-    levelRequired: 25,
+    levelRequired: 28,
     description: 'Dragon/Flying pseudo-legendary',
     pokedexId: 373,
   },
@@ -587,7 +646,7 @@ const DEFAULT_PROGRESSION = {
   talentPointsSpent: 0,
 
   // Unlocked starters
-  unlockedStarters: ['charizard', 'blastoise', 'venusaur'],
+  unlockedStarters: ['charmander', 'squirtle', 'bulbasaur'],
 
   // Daily tracking
   lastLoginDate: null,
@@ -786,6 +845,25 @@ export function getTalentEffect(progression, effectKey) {
   }
 
   return totalEffect;
+}
+
+// Get all unlocked trainer skills
+export function getUnlockedSkills(progression) {
+  const skills = [];
+
+  for (const [talentId, rank] of Object.entries(progression.talents)) {
+    if (rank <= 0) continue;
+
+    const talent = TALENTS[talentId];
+    if (!talent) continue;
+
+    const effect = talent.effect(rank);
+    if (effect.unlock_skill) {
+      skills.push(effect.unlock_skill);
+    }
+  }
+
+  return skills;
 }
 
 // Get all active talent effects as an object
@@ -990,7 +1068,10 @@ export function processRunCompletion(progression, runData) {
   // Apply tokens
   updated = addTokens(updated, tokensGained, 'run_completion');
 
-  console.log(`[Progression] Run complete! XP: +${xpGained}, Tokens: +${tokensGained}`);
+  // IMPORTANT: Save progression to localStorage!
+  saveProgression(updated);
+
+  console.log(`[Progression] Run complete! XP: +${xpGained}, Tokens: +${tokensGained}, Gold: +${permanentGoldGain}`);
 
   return {
     progression: updated,

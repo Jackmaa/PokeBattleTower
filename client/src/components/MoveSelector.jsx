@@ -1,74 +1,134 @@
 // 📁 MoveSelector.jsx
-// Move selection UI for battle
+// Move selection UI for battle - Now with skill level display!
 
 import { motion } from "framer-motion";
-import typeColors from "../utils/typeColors";
 import { getTypeEffectiveness } from "../utils/typeChart";
-import { TARGET_TYPES } from "../utils/moves";
+import { MAX_SKILL_LEVEL, getSkillLevelDisplay, getSkillLevelColor } from "../utils/moves";
+import typeColors from "../utils/typeColors";
 import { Card } from "./ui";
+import { useMoveDisplay } from "../hooks/ui/useMoveDisplay";
+import useKeyboardNavigation from "../hooks/useKeyboardNavigation";
+import { keybindManager, getGridNumber } from "../utils/keybindConfig";
+import FocusIndicator from "./keyboard/FocusIndicator";
 
-// Status effect configuration for badges
-const STATUS_CONFIG = {
-  poisoned: { emoji: '☠️', color: 'rgba(168, 85, 247, 0.5)', border: 'rgba(168, 85, 247, 0.7)', text: '#d8b4fe' },
-  badly_poisoned: { emoji: '☠️', color: 'rgba(147, 51, 234, 0.5)', border: 'rgba(147, 51, 234, 0.7)', text: '#c084fc' },
-  paralyzed: { emoji: '⚡', color: 'rgba(234, 179, 8, 0.5)', border: 'rgba(234, 179, 8, 0.7)', text: '#fde047' },
-  burned: { emoji: '🔥', color: 'rgba(249, 115, 22, 0.5)', border: 'rgba(249, 115, 22, 0.7)', text: '#fdba74' },
-  frozen: { emoji: '❄️', color: 'rgba(6, 182, 212, 0.5)', border: 'rgba(6, 182, 212, 0.7)', text: '#67e8f9' },
-  asleep: { emoji: '💤', color: 'rgba(100, 116, 139, 0.5)', border: 'rgba(100, 116, 139, 0.7)', text: '#cbd5e1' },
-  confused: { emoji: '😵', color: 'rgba(236, 72, 153, 0.5)', border: 'rgba(236, 72, 153, 0.7)', text: '#f9a8d4' },
-};
-
-// Check if move is AOE
-const isAOEMove = (target) => {
-  return target === TARGET_TYPES.ALL_ENEMIES ||
-         target === TARGET_TYPES.ALL_ALLIES ||
-         target === TARGET_TYPES.ALL_OTHER;
-};
-
-export default function MoveSelector({ moves, onSelectMove, disabled = false, enemyTypes = [] }) {
+export default function MoveSelector({ moves, onSelectMove, disabled = false, enemyTypes = [], onBack = null }) {
   if (!moves || moves.length === 0) {
     return null;
   }
 
+  // Configuration de la navigation clavier
+  const {
+    selectedIndex,
+    isKeyboardFocused,
+    getItemProps,
+  } = useKeyboardNavigation({
+    items: moves,
+    enabled: !disabled && keybindManager.isEnabled(),
+    layout: 'grid',
+    columns: 2,
+    onSelect: (move, index) => {
+      const isOutOfPP = move.pp <= 0;
+      if (!isOutOfPP && !disabled) {
+        onSelectMove(move, index);
+      }
+    },
+    onCancel: onBack,
+    enableNumberKeys: true,
+    loop: true,
+    isItemDisabled: (move) => move.pp <= 0,
+  });
+
   return (
     <Card className="p-6 max-w-2xl mx-auto">
-      <h3 className="text-xl font-bold mb-4 text-gaming-accent text-center">
-        ⚔️ Choose Your Move
-      </h3>
+      <div className="flex items-center justify-between mb-4">
+        {onBack && (
+          <motion.button
+            onClick={onBack}
+            className="flex items-center gap-2 text-neon-cyan hover:text-white transition-colors"
+            whileHover={{ x: -5 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <span className="text-xl">←</span>
+            <span className="font-display text-sm uppercase tracking-wider">Back</span>
+          </motion.button>
+        )}
+        <h3 className={`text-xl font-bold text-gaming-accent ${onBack ? '' : 'text-center w-full'}`}>
+          ⚔️ Choose Your Move
+        </h3>
+        {onBack && <div className="w-20" />} {/* Spacer for centering */}
+      </div>
 
       <div className="grid grid-cols-2 gap-4">
         {moves.map((move, index) => {
-          const typeColor = typeColors[move.type] || "#999";
-          const isOutOfPP = move.pp <= 0;
-          const effectiveness = enemyTypes.length > 0 ? getTypeEffectiveness(move.type, enemyTypes) : 1;
+          const MoveButton = () => {
+            const { typeColor, isOutOfPP, badges, styles } = useMoveDisplay(move, {
+              showEnhancedInfo: true,
+              showSkillLevel: true,
+              showFused: true,
+              showPP: true,
+            });
+            const effectiveness = enemyTypes.length > 0 ? getTypeEffectiveness(move.type, enemyTypes) : 1;
+            const isSelected = index === selectedIndex && isKeyboardFocused;
+            const keyNumber = getGridNumber(index);
 
-          return (
-            <motion.button
-              key={move.id || index}
-              onClick={() => !isOutOfPP && !disabled && onSelectMove(move, index)}
-              disabled={isOutOfPP || disabled}
-              className={`relative p-4 rounded-lg border-2 transition-all duration-200 ${
-                isOutOfPP || disabled
-                  ? "opacity-50 cursor-not-allowed bg-gray-700/30"
-                  : "hover:scale-105 cursor-pointer"
-              }`}
-              style={{
-                borderColor: typeColor,
-                backgroundColor: isOutOfPP
-                  ? "#333"
-                  : `${typeColor}20`,
-              }}
-              whileHover={!isOutOfPP && !disabled ? { y: -3 } : {}}
-              whileTap={!isOutOfPP && !disabled ? { scale: 0.95 } : {}}
+            return (
+              <FocusIndicator isVisible={isSelected && !isOutOfPP} color="yellow" animated>
+                <motion.button
+                  key={move.id || index}
+                  {...getItemProps(index)}
+                  onClick={() => !isOutOfPP && !disabled && onSelectMove(move, index)}
+                  disabled={isOutOfPP || disabled}
+                  className={`relative p-4 rounded-lg border-2 transition-all duration-200 ${
+                    isOutOfPP || disabled
+                      ? "opacity-50 cursor-not-allowed bg-gray-700/30"
+                      : "hover:scale-105 cursor-pointer"
+                  }`}
+                  style={styles.container}
+                  whileHover={!isOutOfPP && !disabled ? { y: -3 } : {}}
+                  whileTap={!isOutOfPP && !disabled ? { scale: 0.95 } : {}}
             >
+              {/* Indicateur de touche numérique */}
+              {!isOutOfPP && (
+                <div className="absolute top-1 left-1 text-xs opacity-50 font-mono bg-black/50 px-1.5 py-0.5 rounded z-10">
+                  {keyNumber}
+                </div>
+              )}
+
               {/* Move Name */}
               <div className="text-left mb-2">
-                <h4
-                  className="font-bold text-lg"
-                  style={{ color: typeColor }}
-                >
-                  {move.name}
-                </h4>
+                <div className="flex items-center gap-2">
+                  <h4
+                    className="font-bold text-lg"
+                    style={{ color: typeColor }}
+                  >
+                    {move.name}
+                  </h4>
+                  {/* Badges from useMoveDisplay */}
+                  {badges.filter(b => ['skillLevel', 'fused'].includes(b.type)).map((badge, badgeIndex) => (
+                    <motion.span
+                      key={`${badge.type}-${badgeIndex}`}
+                      className="text-xs px-1.5 py-0.5 rounded font-bold"
+                      style={{
+                        backgroundColor: badge.color,
+                        color: badge.text,
+                        boxShadow: badge.type === 'skillLevel' && move.skillLevel >= 4
+                          ? `0 0 8px ${badge.text}40`
+                          : badge.type === 'fused'
+                            ? '0 0 10px #a855f7'
+                            : 'none',
+                      }}
+                      initial={{ scale: 0 }}
+                      animate={badge.type === 'fused'
+                        ? { scale: 1, boxShadow: ['0 0 0px #a855f7', '0 0 10px #a855f7', '0 0 0px #a855f7'] }
+                        : { scale: 1 }
+                      }
+                      transition={badge.type === 'fused' ? { boxShadow: { repeat: Infinity, duration: 1.5 } } : {}}
+                    >
+                      {badge.label}
+                      {badge.type === 'skillLevel' && move.skillLevel >= MAX_SKILL_LEVEL && ' MAX'}
+                    </motion.span>
+                  ))}
+                </div>
                 <div className="flex items-center gap-2 mt-1">
                   <span
                     className="text-xs px-2 py-0.5 rounded-full font-semibold uppercase"
@@ -79,34 +139,40 @@ export default function MoveSelector({ moves, onSelectMove, disabled = false, en
                   >
                     {move.type}
                   </span>
+                  {/* Secondary type for fused moves */}
+                  {move.secondaryType && (
+                    <span
+                      className="text-xs px-2 py-0.5 rounded-full font-semibold uppercase"
+                      style={{
+                        backgroundColor: typeColors[move.secondaryType] || '#888',
+                        color: "#fff",
+                      }}
+                    >
+                      {move.secondaryType}
+                    </span>
+                  )}
                   <span className="text-xs text-white/70 capitalize">
                     {move.category}
                   </span>
                 </div>
 
-                {/* AOE and Status Effect Badges */}
-                {(isAOEMove(move.target) || move.effect?.status) && (
+                {/* AOE and Status Effect Badges from useMoveDisplay */}
+                {badges.filter(b => ['aoe', 'status'].includes(b.type)).length > 0 && (
                   <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                    {/* AOE Badge */}
-                    {isAOEMove(move.target) && (
-                      <span className="px-1.5 py-0.5 text-[10px] font-bold rounded border bg-orange-500/30 border-orange-400/50 text-orange-300">
-                        💥 AOE
-                      </span>
-                    )}
-
-                    {/* Status Effect Badge */}
-                    {move.effect?.status && STATUS_CONFIG[move.effect.status] && (
+                    {badges.filter(b => ['aoe', 'status'].includes(b.type)).map((badge, badgeIndex) => (
                       <span
+                        key={`${badge.type}-${badgeIndex}`}
                         className="px-1.5 py-0.5 text-[10px] font-bold rounded border"
                         style={{
-                          backgroundColor: STATUS_CONFIG[move.effect.status].color,
-                          borderColor: STATUS_CONFIG[move.effect.status].border,
-                          color: STATUS_CONFIG[move.effect.status].text,
+                          backgroundColor: badge.color,
+                          borderColor: badge.border,
+                          color: badge.text,
                         }}
                       >
-                        {STATUS_CONFIG[move.effect.status].emoji} {move.effect.chance || 100}%
+                        {badge.label}
+                        {badge.type === 'status' && ` ${move.effect?.chance || 100}%`}
                       </span>
-                    )}
+                    ))}
                   </div>
                 )}
               </div>
@@ -185,8 +251,12 @@ export default function MoveSelector({ moves, onSelectMove, disabled = false, en
                   </span>
                 </div>
               )}
-            </motion.button>
-          );
+                </motion.button>
+              </FocusIndicator>
+            );
+          };
+
+          return <MoveButton key={move.id || index} />;
         })}
       </div>
 

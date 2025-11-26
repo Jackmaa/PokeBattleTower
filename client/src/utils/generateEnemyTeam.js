@@ -29,20 +29,20 @@ export function getEnemyCountForFloor(floor, nodeType = 'combat') {
   }
 
   // Normal combat scales with floor
-  if (floor <= 3) {
-    return 1; // Early floors: 1 enemy
-  } else if (floor <= 7) {
-    return Math.random() < 0.7 ? 1 : 2; // 70% chance of 1, 30% chance of 2
-  } else if (floor <= 12) {
-    return Math.random() < 0.5 ? 2 : 3; // 50/50 between 2 and 3
-  } else if (floor <= 18) {
-    return Math.random() < 0.6 ? 2 : 3; // Mostly 2-3
+  if (floor <= 2) {
+    return 1; // Very early: 1 enemy
+  } else if (floor <= 5) {
+    return Math.random() < 0.6 ? 1 : 2; // Mostly 1, sometimes 2
+  } else if (floor <= 10) {
+    return Math.random() < 0.4 ? 2 : 3; // Mostly 3, sometimes 2
+  } else if (floor <= 15) {
+    return Math.random() < 0.5 ? 3 : 4; // 3 or 4
   } else {
-    // High floors: 2-4 enemies
+    // High floors: 4-6 enemies
     const roll = Math.random();
-    if (roll < 0.2) return 2;
-    if (roll < 0.6) return 3;
-    return 4;
+    if (roll < 0.3) return 4;
+    if (roll < 0.7) return 5;
+    return 6;
   }
 }
 

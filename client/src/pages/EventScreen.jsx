@@ -1,7 +1,7 @@
 // 📁 EventScreen.jsx
-// Random event screen with choices - Slay the Spire style
+// Random event screen with choices - Revamped with epic animations!
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { motion, AnimatePresence } from 'framer-motion';
 import { teamState } from '../recoil/atoms/team';
@@ -17,15 +17,46 @@ import { getRandomPokemon } from '../utils/getRandomPokemon';
 import { getRandomRelic, RELIC_TIERS } from '../utils/relics';
 import { getItemById } from '../utils/items';
 import { useAudio } from '../hooks/useAudio';
+import { useOutcomeProcessor } from '../hooks/core/useOutcomeProcessor';
+import { useTemporaryState } from '../hooks/ui/useTemporaryState';
 import { discoverRelic } from '../utils/metaProgression';
+
+// Particle effect component for ambient atmosphere
+function ParticleField({ color = '#fbbf24', count = 20 }) {
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      {[...Array(count)].map((_, i) => (
+        <motion.div
+          key={i}
+          className="absolute w-1 h-1 rounded-full"
+          style={{
+            backgroundColor: color,
+            left: `${Math.random() * 100}%`,
+            top: `${Math.random() * 100}%`,
+            boxShadow: `0 0 ${4 + Math.random() * 4}px ${color}`,
+          }}
+          animate={{
+            y: [0, -30 - Math.random() * 50, 0],
+            x: [0, (Math.random() - 0.5) * 30, 0],
+            opacity: [0, 0.8, 0],
+            scale: [0, 1, 0],
+          }}
+          transition={{
+            duration: 3 + Math.random() * 3,
+            repeat: Infinity,
+            delay: Math.random() * 3,
+            ease: 'easeInOut',
+          }}
+        />
+      ))}
+    </div>
+  );
+}
 
 export default function EventScreen({ onComplete }) {
   const [team, setTeam] = useRecoilState(teamState);
-  const [inventory, setInventory] = useRecoilState(inventoryState);
-  const [currency, setCurrency] = useRecoilState(currencyState);
-  const [highlight, setHighlight] = useRecoilState(highlightedStatState);
-  const [relics, setRelics] = useRecoilState(relicsState);
   const floor = useRecoilValue(floorState);
+  const [currency, setCurrency] = useRecoilState(currencyState);
 
   const [currentEvent, setCurrentEvent] = useState(null);
   const [selectedChoice, setSelectedChoice] = useState(null);
@@ -36,7 +67,9 @@ export default function EventScreen({ onComplete }) {
   const [showPokemonChoice, setShowPokemonChoice] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
 
-  const { playHealSound, playLevelUpSound, playCatchSound, playMenuSelect, playDefeatSound } = useAudio();
+  const { playMenuSelect } = useAudio();
+  const [highlight, setTemporaryHighlight] = useTemporaryState(null, 3000);
+  const { applyOutcome } = useOutcomeProcessor(setTeam, setTemporaryHighlight, setNewRelic);
 
   useEffect(() => {
     // Load random choice event based on floor
@@ -44,143 +77,10 @@ export default function EventScreen({ onComplete }) {
     setCurrentEvent(event);
   }, [floor]);
 
-  const applyOutcome = async (outcome) => {
-    const messages = [];
-
-    switch (outcome.type) {
-      case 'heal_percent': {
-        const healPercent = outcome.value;
-        setTeam(prev => prev.map(poke => ({
-          ...poke,
-          stats: {
-            ...poke.stats,
-            hp: Math.min(poke.stats.hp_max, poke.stats.hp + Math.floor(poke.stats.hp_max * healPercent)),
-          },
-        })));
-        playHealSound();
-        messages.push(outcome.message);
-        break;
-      }
-
-      case 'damage_percent': {
-        const damagePercent = outcome.value;
-        setTeam(prev => prev.map(poke => ({
-          ...poke,
-          stats: {
-            ...poke.stats,
-            hp: Math.max(1, poke.stats.hp - Math.floor(poke.stats.hp_max * damagePercent)),
-          },
-        })));
-        playDefeatSound();
-        messages.push(outcome.message);
-        break;
-      }
-
-      case 'stat_boost': {
-        const stats = ['attack', 'defense', 'special_attack', 'special_defense', 'speed'];
-        const stat = outcome.stat === 'random' ? stats[Math.floor(Math.random() * stats.length)] : outcome.stat;
-        const randomIndex = Math.floor(Math.random() * team.length);
-
-        setTeam(prev => prev.map((poke, i) => i === randomIndex ? {
-          ...poke,
-          stats: { ...poke.stats, [stat]: poke.stats[stat] + outcome.value },
-        } : poke));
-
-        setHighlight({ index: randomIndex, stat });
-        playLevelUpSound();
-        setTimeout(() => setHighlight(null), 3000);
-        messages.push(outcome.message);
-        break;
-      }
-
-      case 'stat_boost_all': {
-        const randomIndex = Math.floor(Math.random() * team.length);
-        setTeam(prev => prev.map((poke, i) => i === randomIndex ? {
-          ...poke,
-          stats: {
-            ...poke.stats,
-            attack: poke.stats.attack + outcome.value,
-            defense: poke.stats.defense + outcome.value,
-            special_attack: poke.stats.special_attack + outcome.value,
-            special_defense: poke.stats.special_defense + outcome.value,
-            speed: poke.stats.speed + outcome.value,
-          },
-        } : poke));
-
-        setHighlight({ index: randomIndex, stat: 'all' });
-        playLevelUpSound();
-        setTimeout(() => setHighlight(null), 3000);
-        messages.push(outcome.message);
-        break;
-      }
-
-      case 'stat_decrease': {
-        const stats = ['attack', 'defense', 'special_attack', 'special_defense', 'speed'];
-        const stat = outcome.stat === 'random' ? stats[Math.floor(Math.random() * stats.length)] : outcome.stat;
-        const randomIndex = Math.floor(Math.random() * team.length);
-
-        setTeam(prev => prev.map((poke, i) => i === randomIndex ? {
-          ...poke,
-          stats: { ...poke.stats, [stat]: Math.max(1, poke.stats[stat] - outcome.value) },
-        } : poke));
-
-        playDefeatSound();
-        messages.push(outcome.message);
-        break;
-      }
-
-      case 'gain_gold': {
-        setCurrency(prev => prev + outcome.value);
-        playCatchSound();
-        messages.push(outcome.message);
-        break;
-      }
-
-      case 'gain_relic': {
-        const tier = outcome.tier === 'common' ? RELIC_TIERS.COMMON :
-                     outcome.tier === 'uncommon' ? RELIC_TIERS.UNCOMMON :
-                     outcome.tier === 'rare' ? RELIC_TIERS.RARE :
-                     RELIC_TIERS.LEGENDARY;
-        const relic = getRandomRelic(tier);
-        if (relic) {
-          setRelics(prev => [...prev, relic]);
-          setNewRelic(relic);
-          playLevelUpSound();
-
-          // Persist relic discovery to localStorage
-          discoverRelic(relic.id);
-        }
-        messages.push(outcome.message);
-        break;
-      }
-
-      case 'gain_item': {
-        // Map item IDs to actual items
-        let itemId = outcome.itemId;
-        if (itemId === 'random_common') {
-          const commonItems = ['potion', 'ether', 'antidote'];
-          itemId = commonItems[Math.floor(Math.random() * commonItems.length)];
-        } else if (itemId === 'random_rare') {
-          const rareItems = ['max_potion', 'full_restore', 'rare_candy'];
-          itemId = rareItems[Math.floor(Math.random() * rareItems.length)];
-        } else if (itemId === 'random_berry') {
-          const berries = ['oran_berry', 'sitrus_berry', 'lum_berry'];
-          itemId = berries[Math.floor(Math.random() * berries.length)];
-        }
-
-        setInventory(prev => ({ ...prev, [itemId]: (prev[itemId] || 0) + 1 }));
-        playCatchSound();
-        messages.push(outcome.message);
-        break;
-      }
-
-      case 'nothing':
-      default:
-        messages.push(outcome.message);
-        break;
-    }
-
-    return messages;
+  // applyOutcome is now provided by useOutcomeProcessor hook
+  // Wrap it to pass the team array for stat-based outcomes
+  const processOutcome = async (outcome) => {
+    return await applyOutcome(outcome, team);
   };
 
   const handleChoiceSelect = async (choice) => {
@@ -210,7 +110,7 @@ export default function EventScreen({ onComplete }) {
     // Apply all outcomes and collect messages
     const allMessages = [];
     for (const outcome of outcomes) {
-      const msgs = await applyOutcome(outcome);
+      const msgs = await processOutcome(outcome);
       allMessages.push(...msgs);
     }
 
@@ -238,209 +138,352 @@ export default function EventScreen({ onComplete }) {
     );
   }
 
+  // Get event-specific color theme
+  const eventColors = {
+    shrine: { primary: '#fbbf24', secondary: '#f59e0b', particle: '#fcd34d' },
+    mysterious: { primary: '#8b5cf6', secondary: '#7c3aed', particle: '#a78bfa' },
+    encounter: { primary: '#ef4444', secondary: '#dc2626', particle: '#f87171' },
+    fortune: { primary: '#10b981', secondary: '#059669', particle: '#34d399' },
+    default: { primary: '#3b82f6', secondary: '#2563eb', particle: '#60a5fa' },
+  };
+
+  const colors = currentEvent?.type
+    ? (eventColors[currentEvent.type] || eventColors.default)
+    : eventColors.default;
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gaming-darker via-gaming-dark to-gaming-darker p-8 relative z-10">
-      <div className="max-w-4xl mx-auto">
-        {/* Currency Display */}
+    <div className="min-h-screen relative overflow-hidden">
+      {/* Dynamic Background based on event type */}
+      <div className="absolute inset-0 bg-gradient-to-b from-black via-gray-900 to-black">
+        {/* Radial glow */}
         <motion.div
-          className="absolute top-4 right-4 px-4 py-2 bg-black/50 rounded-lg border border-yellow-500/30"
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-        >
-          <span className="text-yellow-400 font-bold text-lg">💰 {currency}</span>
-        </motion.div>
+          className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full blur-[150px]"
+          style={{ backgroundColor: colors.primary }}
+          animate={{
+            opacity: [0.15, 0.25, 0.15],
+            scale: [1, 1.1, 1],
+          }}
+          transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+        />
+        {/* Secondary glow */}
+        <motion.div
+          className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] rounded-full blur-[120px]"
+          style={{ backgroundColor: colors.secondary }}
+          animate={{
+            opacity: [0.1, 0.2, 0.1],
+          }}
+          transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
+        />
+      </div>
 
-        {/* Event Title */}
-        <motion.div
-          className="text-center mb-8"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
+      {/* Ambient particles */}
+      <ParticleField color={colors.particle} count={30} />
+
+      {/* Main content */}
+      <div className="relative z-10 min-h-screen p-4 md:p-8">
+        <div className="max-w-4xl mx-auto">
+          {/* Currency Display - Floating */}
           <motion.div
-            className="text-8xl mb-4"
-            animate={{
-              y: [0, -10, 0],
-              rotate: [0, 5, -5, 0],
-            }}
-            transition={{
-              duration: 2,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
+            className="fixed top-4 right-4 z-20"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
           >
-            {currentEvent.icon}
+            <div className="px-4 py-2 bg-black/70 backdrop-blur-md rounded-xl border border-yellow-500/40 shadow-lg shadow-yellow-500/10">
+              <span className="text-yellow-400 font-bold text-lg">💰 {currency}</span>
+            </div>
           </motion.div>
-          <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">
-            {currentEvent.title}
-          </h1>
-          <p className="text-lg text-white/70 max-w-2xl mx-auto">
-            {currentEvent.description}
-          </p>
-        </motion.div>
 
-        {/* Choices */}
-        {!isComplete && currentEvent.choices && (
+          {/* Event Card */}
           <motion.div
-            className="space-y-4 mb-8"
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.3 }}
+            className="relative mt-8"
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
           >
-            {currentEvent.choices.map((choice, index) => {
-              const canAfford = canAffordChoice(choice, currency);
-              const isSelected = selectedChoice?.id === choice.id;
+            {/* Event Icon - Floating above card */}
+            <motion.div
+              className="absolute -top-16 left-1/2 -translate-x-1/2 z-10"
+              animate={{
+                y: [0, -10, 0],
+              }}
+              transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+            >
+              <div
+                className="text-8xl md:text-9xl filter drop-shadow-2xl"
+                style={{
+                  filter: `drop-shadow(0 0 30px ${colors.primary})`,
+                }}
+              >
+                {currentEvent.icon}
+              </div>
+            </motion.div>
 
-              return (
-                <motion.div
-                  key={choice.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.4 + index * 0.1 }}
-                  whileHover={!isRevealing && canAfford ? { scale: 1.02, x: 10 } : {}}
-                  whileTap={!isRevealing && canAfford ? { scale: 0.98 } : {}}
+            {/* Main Event Card */}
+            <Card className="relative overflow-hidden bg-black/60 backdrop-blur-xl border-2 rounded-2xl pt-16 pb-8 px-6 md:px-10"
+              style={{ borderColor: `${colors.primary}40` }}
+            >
+              {/* Decorative corner accents */}
+              <div className="absolute top-0 left-0 w-20 h-20 border-t-2 border-l-2 rounded-tl-2xl" style={{ borderColor: colors.primary }} />
+              <div className="absolute top-0 right-0 w-20 h-20 border-t-2 border-r-2 rounded-tr-2xl" style={{ borderColor: colors.primary }} />
+              <div className="absolute bottom-0 left-0 w-20 h-20 border-b-2 border-l-2 rounded-bl-2xl" style={{ borderColor: colors.primary }} />
+              <div className="absolute bottom-0 right-0 w-20 h-20 border-b-2 border-r-2 rounded-br-2xl" style={{ borderColor: colors.primary }} />
+
+              {/* Event Title */}
+              <div className="text-center mb-8">
+                <motion.h1
+                  className="text-4xl md:text-5xl font-black mb-4 tracking-tight"
+                  style={{
+                    color: colors.primary,
+                    textShadow: `0 0 40px ${colors.primary}60`,
+                  }}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.3 }}
                 >
-                  <Card
-                    className={`p-5 cursor-pointer transition-all border-2 ${
-                      isSelected
-                        ? 'border-gaming-accent bg-gaming-accent/20'
-                        : canAfford
-                          ? 'border-white/20 hover:border-gaming-accent/50'
-                          : 'border-red-500/30 opacity-50'
-                    }`}
-                    clickable={!isRevealing && canAfford}
-                    onClick={() => handleChoiceSelect(choice)}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <h3 className="text-xl font-bold text-white mb-1">
-                          {choice.label}
-                        </h3>
-                        <p className="text-white/60 text-sm">{choice.description}</p>
-                      </div>
+                  {currentEvent.title}
+                </motion.h1>
+                <motion.p
+                  className="text-lg md:text-xl text-white/70 max-w-2xl mx-auto leading-relaxed"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.5 }}
+                >
+                  {currentEvent.description}
+                </motion.p>
+              </div>
 
-                      {choice.cost?.gold && (
-                        <div className={`ml-4 px-3 py-1 rounded-lg text-sm font-bold ${
-                          canAfford
-                            ? 'bg-yellow-500/20 text-yellow-400'
-                            : 'bg-red-500/20 text-red-400'
-                        }`}>
-                          💰 {choice.cost.gold}
-                        </div>
-                      )}
+              {/* Choices */}
+              {!isComplete && currentEvent.choices && (
+                <motion.div
+                  className="space-y-4 mb-6"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.6 }}
+                >
+                  {currentEvent.choices.map((choice, index) => {
+                    const canAfford = canAffordChoice(choice, currency);
+                    const isSelected = selectedChoice?.id === choice.id;
+
+                    return (
+                      <motion.div
+                        key={choice.id}
+                        initial={{ opacity: 0, x: -30 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.7 + index * 0.1 }}
+                      >
+                        <motion.button
+                          className={`w-full p-5 rounded-xl text-left transition-all duration-300 relative overflow-hidden group ${
+                            !canAfford ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'
+                          }`}
+                          style={{
+                            background: isSelected
+                              ? `linear-gradient(135deg, ${colors.primary}30, ${colors.secondary}20)`
+                              : 'rgba(255,255,255,0.05)',
+                            border: `2px solid ${isSelected ? colors.primary : 'rgba(255,255,255,0.1)'}`,
+                          }}
+                          onClick={() => !isRevealing && canAfford && handleChoiceSelect(choice)}
+                          whileHover={!isRevealing && canAfford ? {
+                            scale: 1.02,
+                            borderColor: colors.primary,
+                          } : {}}
+                          whileTap={!isRevealing && canAfford ? { scale: 0.98 } : {}}
+                          disabled={isRevealing || !canAfford}
+                        >
+                          {/* Hover glow effect */}
+                          <motion.div
+                            className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                            style={{
+                              background: `radial-gradient(circle at center, ${colors.primary}10 0%, transparent 70%)`,
+                            }}
+                          />
+
+                          <div className="relative flex items-center justify-between gap-4">
+                            <div className="flex-1">
+                              <h3 className="text-xl font-bold text-white mb-1 flex items-center gap-2">
+                                {choice.label}
+                                {choice.risk === 'high' && <span className="text-red-400 text-sm">⚠️ Risky</span>}
+                              </h3>
+                              <p className="text-white/50 text-sm">{choice.description}</p>
+                            </div>
+
+                            {choice.cost?.gold && (
+                              <div className={`px-4 py-2 rounded-lg font-bold text-sm whitespace-nowrap ${
+                                canAfford
+                                  ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
+                                  : 'bg-red-500/20 text-red-400 border border-red-500/30'
+                              }`}>
+                                💰 {choice.cost.gold}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Selection reveal animation */}
+                          {isSelected && isRevealing && (
+                            <motion.div
+                              className="absolute inset-0 flex items-center justify-center bg-black/60"
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                            >
+                              <motion.div
+                                className="flex items-center gap-3 text-xl font-bold"
+                                style={{ color: colors.primary }}
+                              >
+                                <motion.div
+                                  animate={{ rotate: 360 }}
+                                  transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                                >
+                                  ✨
+                                </motion.div>
+                                <span>Revealing fate...</span>
+                              </motion.div>
+                            </motion.div>
+                          )}
+                        </motion.button>
+                      </motion.div>
+                    );
+                  })}
+                </motion.div>
+              )}
+
+              {/* Outcome Display */}
+              <AnimatePresence>
+                {isComplete && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    className="mb-6"
+                  >
+                    {/* Outcome header with divider */}
+                    <div className="flex items-center gap-4 mb-6">
+                      <div className="flex-1 h-px" style={{ background: `linear-gradient(90deg, transparent, ${colors.primary}60)` }} />
+                      <motion.h2
+                        className="text-2xl font-bold px-4"
+                        style={{ color: colors.primary }}
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ type: 'spring' }}
+                      >
+                        ✨ Outcome ✨
+                      </motion.h2>
+                      <div className="flex-1 h-px" style={{ background: `linear-gradient(90deg, ${colors.primary}60, transparent)` }} />
                     </div>
 
-                    {isSelected && isRevealing && (
-                      <motion.div
-                        className="mt-3 flex items-center justify-center gap-2 text-gaming-accent"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                      >
-                        <motion.span
-                          animate={{ rotate: 360 }}
-                          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                    <div className="space-y-3">
+                      {outcomeMessages.map((msg, i) => (
+                        <motion.div
+                          key={i}
+                          initial={{ opacity: 0, x: -20, scale: 0.9 }}
+                          animate={{ opacity: 1, x: 0, scale: 1 }}
+                          transition={{ delay: i * 0.2, type: 'spring' }}
+                          className="p-4 rounded-xl text-center text-lg font-medium"
+                          style={{
+                            background: `linear-gradient(135deg, ${colors.primary}15, transparent)`,
+                            border: `1px solid ${colors.primary}30`,
+                          }}
                         >
-                          ⏳
-                        </motion.span>
-                        <span>Revealing fate...</span>
+                          {msg}
+                        </motion.div>
+                      ))}
+                    </div>
+
+                    {/* New Relic Display */}
+                    {newRelic && (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.8, rotateY: -90 }}
+                        animate={{ opacity: 1, scale: 1, rotateY: 0 }}
+                        transition={{ delay: 0.5, type: 'spring' }}
+                        className="mt-6 p-5 rounded-xl border"
+                        style={{
+                          background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(124, 58, 237, 0.1))',
+                          borderColor: 'rgba(139, 92, 246, 0.5)',
+                        }}
+                      >
+                        <motion.div
+                          className="text-center mb-3 text-purple-300 font-bold text-xl"
+                          animate={{ scale: [1, 1.05, 1] }}
+                          transition={{ duration: 1, repeat: Infinity }}
+                        >
+                          🎁 New Relic Acquired! 🎁
+                        </motion.div>
+                        <div className="flex items-center justify-center gap-4">
+                          <RelicIcon relic={newRelic} size="lg" />
+                          <div className="text-left">
+                            <div className="font-bold text-white text-lg">{newRelic.name}</div>
+                            <div className="text-sm text-white/70">{newRelic.description}</div>
+                          </div>
+                        </div>
                       </motion.div>
                     )}
-                  </Card>
-                </motion.div>
-              );
-            })}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </Card>
           </motion.div>
-        )}
 
-        {/* Outcome Display */}
-        <AnimatePresence>
+          {/* Team Display */}
           {isComplete && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mb-8"
+              transition={{ delay: 0.5 }}
+              className="mt-8"
             >
-              <Card className="p-6 border-2 border-gaming-accent">
-                <h2 className="text-2xl font-bold text-gaming-accent mb-4 text-center">
-                  Outcome
-                </h2>
-
-                <div className="space-y-3">
-                  {outcomeMessages.map((msg, i) => (
+              <Card className="p-6 bg-black/40 backdrop-blur-md border border-white/10 rounded-xl">
+                <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                  <span>Your Team</span>
+                  <div className="flex-1 h-px bg-white/20" />
+                </h3>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                  {team.map((poke, i) => (
                     <motion.div
-                      key={i}
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: i * 0.2 }}
-                      className="p-3 bg-black/30 rounded-lg text-white/90 text-center"
+                      key={poke.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.6 + i * 0.05 }}
                     >
-                      {msg}
+                      <PokemonCard
+                        poke={poke}
+                        highlight={highlight}
+                        mode="default"
+                      />
                     </motion.div>
                   ))}
                 </div>
-
-                {/* New Relic Display */}
-                {newRelic && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.5 }}
-                    className="mt-4 p-4 bg-gradient-to-r from-purple-900/50 to-purple-600/50 rounded-lg border border-purple-500/50"
-                  >
-                    <div className="text-center mb-2 text-purple-300 font-bold">New Relic Acquired!</div>
-                    <div className="flex items-center justify-center gap-3">
-                      <RelicIcon relic={newRelic} size="lg" />
-                      <div>
-                        <div className="font-bold text-white">{newRelic.name}</div>
-                        <div className="text-sm text-white/70">{newRelic.description}</div>
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
               </Card>
             </motion.div>
           )}
-        </AnimatePresence>
 
-        {/* Team Display */}
-        {isComplete && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
-            className="mb-8"
-          >
-            <Card className="p-6">
-              <h3 className="text-xl font-bold text-white mb-4">Your Team</h3>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-                {team.map((poke, i) => (
-                  <PokemonCard
-                    key={poke.id}
-                    poke={poke}
-                    highlight={highlight}
-                    mode="default"
-                  />
-                ))}
-              </div>
-            </Card>
-          </motion.div>
-        )}
-
-        {/* Continue Button */}
-        {isComplete && (
-          <motion.div
-            className="flex justify-center"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.8 }}
-          >
-            <Button
-              onClick={handleContinue}
-              className="btn-primary px-8 py-4 text-xl font-bold"
+          {/* Continue Button */}
+          {isComplete && (
+            <motion.div
+              className="flex justify-center mt-8 pb-8"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.8 }}
             >
-              Continue to Map →
-            </Button>
-          </motion.div>
-        )}
+              <motion.button
+                onClick={handleContinue}
+                className="relative px-10 py-4 text-xl font-bold rounded-xl overflow-hidden group"
+                style={{
+                  background: `linear-gradient(135deg, ${colors.primary}, ${colors.secondary})`,
+                  boxShadow: `0 0 30px ${colors.primary}40`,
+                }}
+                whileHover={{ scale: 1.05, boxShadow: `0 0 50px ${colors.primary}60` }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <span className="relative z-10 text-white drop-shadow-lg">Continue to Map →</span>
+                <motion.div
+                  className="absolute inset-0 bg-white"
+                  initial={{ x: '-100%' }}
+                  whileHover={{ x: '100%' }}
+                  transition={{ duration: 0.5 }}
+                  style={{ opacity: 0.2 }}
+                />
+              </motion.button>
+            </motion.div>
+          )}
+        </div>
       </div>
     </div>
   );

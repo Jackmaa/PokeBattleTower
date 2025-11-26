@@ -1,372 +1,355 @@
 @import "tailwindcss";
 
-/* Multi-theme CSS variables with dark theme as default */
+/* Import Fonts */
+@import url("https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Exo+2:ital,wght@0,300;0,400;0,600;0,700;1,400&display=swap");
+
+/* Neon Verse Theme Variables */
 :root {
-  /* Primary backgrounds */
-  --bg-primary: #0f0a1e;
-  --bg-secondary: #1a1130;
-  --bg-tertiary: #241845;
+  /* Backgrounds - Deep Space */
+  --bg-deep: #030014;
+  --bg-secondary: #0a0a20;
+  --bg-tertiary: #12123a;
 
-  /* Gradient colors */
-  --gradient-from: #1e1b4b;
-  --gradient-via: #312e81;
-  --gradient-to: #0f0a1e;
+  /* Neon Accents */
+  --accent-cyan: #00f3ff;
+  --accent-magenta: #ff00ff;
+  --accent-violet: #bc13fe;
+  --accent-gold: #ffd700;
+  --accent-emerald: #00ff9d;
+  --accent-danger: #ff2a6d;
 
-  /* Accent colors */
-  --accent-primary: #818cf8;
-  --accent-secondary: #a78bfa;
-  --accent-tertiary: #c4b5fd;
+  /* Glassmorphism */
+  --glass-bg: rgba(10, 10, 25, 0.6);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-highlight: rgba(255, 255, 255, 0.05);
 
-  /* Text colors */
+  /* Text */
   --text-primary: #ffffff;
-  --text-secondary: rgba(255, 255, 255, 0.8);
-  --text-muted: rgba(255, 255, 255, 0.6);
+  --text-secondary: rgba(255, 255, 255, 0.7);
+  --text-muted: rgba(255, 255, 255, 0.4);
 
-  /* Border colors */
-  --border-primary: rgba(129, 140, 248, 0.3);
-  --border-secondary: rgba(255, 255, 255, 0.1);
-
-  /* Orb colors for background */
-  --orb-1: rgba(168, 85, 247, 0.3);
-  --orb-2: rgba(59, 130, 246, 0.3);
-  --orb-3: rgba(99, 102, 241, 0.2);
+  /* Gradients */
+  --gradient-neon: linear-gradient(
+    135deg,
+    var(--accent-cyan),
+    var(--accent-violet)
+  );
+  --gradient-dark: linear-gradient(to bottom, var(--bg-deep), #090919);
 }
 
-/* Custom theme with CSS variables */
 @theme {
-  --color-gaming-dark: #0f0f1e;
-  --color-gaming-darker: #0a0a14;
-  --color-gaming-accent: #6366f1;
-  --color-gaming-accent-light: #818cf8;
-  --color-gaming-success: #10b981;
-  --color-gaming-danger: #ef4444;
-  --color-gaming-warning: #f59e0b;
+  --font-display: "Orbitron", system-ui, sans-serif;
+  --font-body: "Exo 2", system-ui, sans-serif;
 
-  --font-gaming: 'Inter', system-ui, sans-serif;
+  --color-neon-cyan: var(--accent-cyan);
+  --color-neon-magenta: var(--accent-magenta);
+  --color-neon-violet: var(--accent-violet);
+  --color-neon-gold: var(--accent-gold);
+  --color-neon-emerald: var(--accent-emerald);
+  --color-neon-danger: var(--accent-danger);
+
+  --color-deep-space: var(--bg-deep);
 }
 
-/* Custom base styles for gaming theme */
 @layer base {
   body {
-    background-color: var(--color-gaming-darker);
-    color: white;
-    font-family: var(--font-gaming);
+    background-color: var(--bg-deep);
+    color: var(--text-primary);
+    font-family: var(--font-body);
     -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
   }
 
-  * {
-    box-sizing: border-box;
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-display);
+    letter-spacing: 0.05em;
   }
 }
 
-/* Custom components for reusable patterns */
 @layer components {
+  /* Premium Glass Card */
   .glass-card {
-    background-color: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(12px);
-    border-radius: 0.5rem;
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: var(--glass-bg);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--glass-border);
+    border-radius: 1rem;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+    position: relative;
+    overflow: hidden;
   }
 
-  .btn-primary {
-    padding: 0.5rem 1rem;
-    background-color: var(--color-gaming-accent);
-    color: white;
+  .glass-card::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.3),
+      transparent
+    );
+    opacity: 0.5;
+  }
+
+  /* Neon Buttons */
+  .btn-neon {
+    position: relative;
+    background: transparent;
+    color: var(--accent-cyan);
+    border: 1px solid var(--accent-cyan);
+    padding: 0.75rem 1.5rem;
+    font-family: var(--font-display);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
     border-radius: 0.5rem;
-    font-weight: 600;
-    transition: all 0.2s;
+    transition: all 0.3s ease;
+    overflow: hidden;
     cursor: pointer;
+    box-shadow: 0 0 10px rgba(0, 243, 255, 0.2),
+      inset 0 0 10px rgba(0, 243, 255, 0.1);
+  }
+
+  .btn-neon::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(0, 243, 255, 0.2),
+      transparent
+    );
+    transition: left 0.5s ease;
+  }
+
+  .btn-neon:hover {
+    background: rgba(0, 243, 255, 0.1);
+    box-shadow: 0 0 20px rgba(0, 243, 255, 0.6),
+      inset 0 0 20px rgba(0, 243, 255, 0.2);
+    text-shadow: 0 0 8px rgba(0, 243, 255, 0.8);
+    transform: translateY(-2px);
+  }
+
+  .btn-neon:hover::before {
+    left: 100%;
+  }
+
+  .btn-neon-primary {
+    background: var(--accent-cyan);
+    color: var(--bg-deep);
     border: none;
+    box-shadow: 0 0 15px rgba(0, 243, 255, 0.4);
   }
 
-  .btn-primary:hover {
-    background-color: var(--color-gaming-accent-light);
-    box-shadow: 0 0 20px rgba(99, 102, 241, 0.5);
+  .btn-neon-primary:hover {
+    background: #fff;
+    color: var(--accent-cyan);
+    box-shadow: 0 0 30px rgba(0, 243, 255, 0.8);
   }
 
-  .btn-secondary {
-    padding: 0.5rem 1rem;
-    background-color: rgba(255, 255, 255, 0.1);
-    color: white;
-    border-radius: 0.5rem;
-    font-weight: 600;
-    transition: all 0.2s;
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    cursor: pointer;
-  }
-
-  .btn-secondary:hover {
-    background-color: rgba(255, 255, 255, 0.2);
-  }
-
+  /* Text Effects */
   .text-glow {
-    filter: drop-shadow(0 0 8px rgba(99, 102, 241, 0.8));
+    text-shadow: 0 0 10px currentColor;
+  }
+
+  .text-glow-cyan {
+    color: var(--accent-cyan);
+    text-shadow: 0 0 10px rgba(0, 243, 255, 0.6);
+  }
+
+  .text-glow-magenta {
+    color: var(--accent-magenta);
+    text-shadow: 0 0 10px rgba(255, 0, 255, 0.6);
+  }
+
+  /* Battle Menu - Mobile Style */
+  /* CRITICAL: This is the most important UI element during battle - highest z-index */
+  .battle-menu {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 9999;
+    padding: 1rem;
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+
+  .battle-menu-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 80px;
+    padding: 1rem;
+    border-radius: 0.75rem;
+    font-family: var(--font-display);
+    font-size: 0.875rem;
+    letter-spacing: 0.05em;
+    background: rgba(10, 10, 25, 0.8);
+    backdrop-filter: blur(8px);
+    border: 2px solid;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .battle-menu-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .battle-menu-btn-cyan {
+    border-color: var(--accent-cyan);
+    color: var(--accent-cyan);
+    box-shadow: 0 0 15px rgba(0, 243, 255, 0.3);
+  }
+
+  .battle-menu-btn-cyan:hover:not(:disabled) {
+    background: rgba(0, 243, 255, 0.15);
+    box-shadow: 0 0 25px rgba(0, 243, 255, 0.5);
+  }
+
+  .battle-menu-btn-magenta {
+    border-color: var(--accent-magenta);
+    color: var(--accent-magenta);
+    box-shadow: 0 0 15px rgba(255, 0, 255, 0.3);
+  }
+
+  .battle-menu-btn-magenta:hover:not(:disabled) {
+    background: rgba(255, 0, 255, 0.15);
+    box-shadow: 0 0 25px rgba(255, 0, 255, 0.5);
+  }
+
+  .battle-menu-btn-violet {
+    border-color: var(--accent-violet);
+    color: var(--accent-violet);
+    box-shadow: 0 0 15px rgba(188, 19, 254, 0.3);
+  }
+
+  .battle-menu-btn-violet:hover:not(:disabled) {
+    background: rgba(188, 19, 254, 0.15);
+    box-shadow: 0 0 25px rgba(188, 19, 254, 0.5);
+  }
+
+  .battle-menu-btn-red {
+    border-color: var(--accent-danger);
+    color: var(--accent-danger);
+    box-shadow: 0 0 15px rgba(255, 42, 109, 0.3);
+  }
+
+  .battle-menu-btn-red:hover:not(:disabled) {
+    background: rgba(255, 42, 109, 0.15);
+    box-shadow: 0 0 25px rgba(255, 42, 109, 0.5);
+  }
+
+  /* Pokemon Card Targeting States */
+  .targetable-card {
+    cursor: crosshair;
+    animation: targetPulse 1.5s ease-in-out infinite;
+  }
+
+  .targetable-card::after {
+    content: "🎯";
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    font-size: 1.5rem;
+    animation: float 2s ease-in-out infinite;
+  }
+
+  .targeted-card {
+    box-shadow: 0 0 30px rgba(255, 215, 0, 0.9) !important;
+    transform: scale(1.05);
+    border-color: var(--accent-gold) !important;
+    border-width: 3px !important;
+  }
+
+  .targeted-card::before {
+    content: "⚡";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 4rem;
+    animation: targetConfirm 0.6s ease-out;
+    pointer-events: none;
+  }
+
+  .non-targetable-card {
+    opacity: 0.5;
+    filter: grayscale(0.5);
+    cursor: not-allowed;
   }
 }
 
-/* Existing custom styles - preserved */
-.highlight {
-  color: #3cf;
-  font-weight: bold;
-  animation: pulse 1s infinite alternate;
-}
-
-@keyframes pulse {
-  from {
-    text-shadow: 0 0 5px #3cf;
-  }
-  to {
-    text-shadow: 0 0 15px #0ff;
-  }
-}
-
-.starter-screen {
-  display: grid;
-  grid-row: 2;
-  place-content: center;
-}
-
-.starter-options {
-  display: flex;
-}
-
-.team-section {
-  display: flex;
-}
-
-.arena-layout {
-  display: flex;
-  justify-content: space-between;
-  padding: 16px;
-  gap: 24px;
-  flex-wrap: wrap;
-}
-
-.flex {
-  display: flex;
-}
-
-.team-column {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.player-team {
-  background: #f4faff;
-  border: 2px solid #0073e6;
-  border-radius: 8px;
-  padding: 12px;
-}
-
-.enemy-team {
-  background: #fff3f3;
-  border: 2px solid #e63232;
-  border-radius: 8px;
-  padding: 12px;
-}
-
-.arena-controls {
-  display: flex;
-  justify-content: center;
-  gap: 12px;
-  margin: 16px 0;
-}
-
-.arena-controls button {
-  padding: 10px 20px;
-  background-color: #3b82f6;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 16px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.arena-controls button:hover {
-  background-color: #2563eb;
-}
-
-.battle-log-panel {
-  background: #000;
-  color: #0f0;
-  font-family: "Courier New", monospace;
-  padding: 12px;
-  margin-top: 20px;
-  border-radius: 6px;
-  max-height: 160px;
-  overflow-y: auto;
-}
-
-.release-choice-panel {
-  background: #1e1e1e;
-  padding: 20px;
-  border-radius: 12px;
-  border: 2px dashed gold;
-  margin-top: 20px;
-  text-align: center;
-}
-
-.release-choice-panel h3 {
-  margin-bottom: 16px;
-  color: gold;
-}
-
-.cancel-button {
-  margin-top: 16px;
-  padding: 10px 18px;
-  background: crimson;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-weight: bold;
-  cursor: pointer;
-}
-
-/* Custom utilities */
 @layer utilities {
-  .animate-fade-in {
-    animation: fadeIn 0.3s ease-in-out;
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
   }
 
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-      transform: translateY(10px);
-    }
-    to {
-      opacity: 1;
+  @keyframes float {
+    0%,
+    100% {
       transform: translateY(0);
     }
-  }
-
-  .animate-slide-up {
-    animation: slideUp 0.4s ease-out;
-  }
-
-  @keyframes slideUp {
-    from {
-      opacity: 0;
-      transform: translateY(20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
+    50% {
+      transform: translateY(-20px);
     }
   }
 
-  /* Micro-interactions */
-  .hover-lift {
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  .animate-pulse-glow {
+    animation: pulseGlow 3s infinite;
   }
 
-  .hover-lift:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-  }
-
-  .hover-glow {
-    transition: box-shadow 0.3s ease;
-  }
-
-  .hover-glow:hover {
-    box-shadow: 0 0 20px rgba(99, 102, 241, 0.6);
-  }
-
-  .animate-pulse-slow {
-    animation: pulseSlow 3s ease-in-out infinite;
-  }
-
-  @keyframes pulseSlow {
-    0%, 100% {
+  @keyframes pulseGlow {
+    0%,
+    100% {
       opacity: 1;
+      filter: brightness(1);
     }
     50% {
       opacity: 0.7;
+      filter: brightness(1.2);
     }
   }
+}
 
-  .animate-bounce-subtle {
-    animation: bounceSubtle 2s ease-in-out infinite;
+/* Custom Keyframes for Battle UI */
+@keyframes targetPulse {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(0, 243, 255, 0.5);
+    transform: scale(1);
   }
-
-  @keyframes bounceSubtle {
-    0%, 100% {
-      transform: translateY(0);
-    }
-    50% {
-      transform: translateY(-10px);
-    }
+  50% {
+    box-shadow: 0 0 40px rgba(0, 243, 255, 0.8);
+    transform: scale(1.02);
   }
+}
 
-  .animate-shake {
-    animation: shake 0.3s ease-in-out;
+@keyframes targetConfirm {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.5);
   }
-
-  @keyframes shake {
-    0%, 100% {
-      transform: translateX(0);
-    }
-    25% {
-      transform: translateX(-10px);
-    }
-    75% {
-      transform: translateX(10px);
-    }
+  50% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.2);
   }
-
-  .animate-spin-slow {
-    animation: spin 3s linear infinite;
-  }
-
-  @keyframes spin {
-    from {
-      transform: rotate(0deg);
-    }
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
-  /* Focus styles for accessibility */
-  .focus-ring {
-    outline: 2px solid transparent;
-    outline-offset: 2px;
-  }
-
-  .focus-ring:focus-visible {
-    outline: 2px solid var(--color-gaming-accent);
-    outline-offset: 2px;
-  }
-
-  /* Gradient text */
-  .text-gradient {
-    background: linear-gradient(to right, var(--color-gaming-accent), var(--color-gaming-accent-light));
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-  }
-
-  /* Smooth scrollbar */
-  .custom-scrollbar::-webkit-scrollbar {
-    width: 8px;
-  }
-
-  .custom-scrollbar::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.2);
-    border-radius: 4px;
-  }
-
-  .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: var(--color-gaming-accent);
-    border-radius: 4px;
-  }
-
-  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: var(--color-gaming-accent-light);
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1);
   }
 }

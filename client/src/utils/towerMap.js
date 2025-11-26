@@ -1,6 +1,8 @@
 // 📁 towerMap.js
 // Tower map generation system - Slay the Spire style
 
+import { TERRAIN_TYPES } from './terrain';
+
 export const NODE_TYPES = {
   COMBAT: 'combat',
   ELITE: 'elite',
@@ -9,6 +11,7 @@ export const NODE_TYPES = {
   HEAL: 'heal',
   EVENT: 'event',
   START: 'start',
+  MYSTERY: 'mystery',
 };
 
 // Visual configuration for each node type
@@ -69,6 +72,14 @@ export const NODE_CONFIG = {
     borderColor: 'border-gray-400',
     description: 'Begin your journey',
   },
+  [NODE_TYPES.MYSTERY]: {
+    icon: '🌌',
+    label: 'Mystery',
+    color: '#ec4899',
+    bgColor: 'from-pink-600 to-pink-400',
+    borderColor: 'border-pink-400',
+    description: 'Unknown encounter',
+  },
 };
 
 /**
@@ -107,6 +118,8 @@ export function generateTowerMap(totalFloors = 20, pathWidth = 4) {
         connections: [],
         visited: false,
         available: false, // Will be set based on current progress
+        terrain: getRandomTerrain(),
+        enemies: null, // Will be populated when scouted or entered
       });
     }
 
@@ -123,6 +136,7 @@ export function generateTowerMap(totalFloors = 20, pathWidth = 4) {
       connections: [],
       visited: false,
       available: false,
+      terrain: getRandomTerrain(),
     }
   ]);
 
@@ -170,18 +184,21 @@ function determineNodeType(floor, totalFloors) {
     if (random < 0.15) return NODE_TYPES.HEAL;
     if (random < 0.25) return NODE_TYPES.SHOP;
     if (random < 0.40) return NODE_TYPES.EVENT;
+    if (random < 0.50) return NODE_TYPES.MYSTERY;
     return NODE_TYPES.COMBAT;
   } else if (floor <= 10) {
     // Mid game: balanced
     if (random < 0.12) return NODE_TYPES.HEAL;
     if (random < 0.22) return NODE_TYPES.SHOP;
     if (random < 0.35) return NODE_TYPES.EVENT;
+    if (random < 0.50) return NODE_TYPES.MYSTERY;
     return NODE_TYPES.COMBAT;
   } else {
     // Late game: more combat, less help
     if (random < 0.08) return NODE_TYPES.HEAL;
     if (random < 0.15) return NODE_TYPES.SHOP;
     if (random < 0.22) return NODE_TYPES.EVENT;
+    if (random < 0.35) return NODE_TYPES.MYSTERY;
     return NODE_TYPES.COMBAT;
   }
 }
@@ -302,4 +319,9 @@ export function calculateNodePosition(node, totalColumns, floorHeight = 120, col
   const y = node.floor * floorHeight + 60;
 
   return { x, y };
+}
+
+function getRandomTerrain() {
+  const terrains = Object.values(TERRAIN_TYPES);
+  return terrains[Math.floor(Math.random() * terrains.length)];
 }

@@ -3,11 +3,14 @@
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { TARGET_TYPES } from '../utils/moves';
+import useKeyboardNavigation from '../hooks/useKeyboardNavigation';
+import { keybindManager } from '../utils/keybindConfig';
+import FocusIndicator from './keyboard/FocusIndicator';
 
 /**
  * Single target option
  */
-function TargetOption({ target, isSelected, onClick, isEnemy }) {
+function TargetOption({ target, isSelected, onClick, isEnemy, isKeyboardFocused, keyNumber }) {
   const hpPercent = Math.round((target.currentHP / target.maxHP) * 100);
 
   const getHpColor = () => {
@@ -17,18 +20,25 @@ function TargetOption({ target, isSelected, onClick, isEnemy }) {
   };
 
   return (
-    <motion.button
-      className={`relative flex flex-col items-center p-2 rounded-lg border-2 transition-all ${
-        isSelected
-          ? 'border-yellow-400 bg-yellow-400/20 scale-105'
-          : isEnemy
-            ? 'border-red-500/50 bg-red-900/20 hover:border-red-400'
-            : 'border-blue-500/50 bg-blue-900/20 hover:border-blue-400'
-      }`}
-      onClick={onClick}
-      whileHover={{ scale: isSelected ? 1.05 : 1.08 }}
-      whileTap={{ scale: 0.95 }}
-    >
+    <FocusIndicator isVisible={isKeyboardFocused} color="yellow" animated>
+      <motion.button
+        className={`relative flex flex-col items-center p-2 rounded-lg border-2 transition-all ${
+          isSelected
+            ? 'border-yellow-400 bg-yellow-400/20 scale-105'
+            : isEnemy
+              ? 'border-red-500/50 bg-red-900/20 hover:border-red-400'
+              : 'border-blue-500/50 bg-blue-900/20 hover:border-blue-400'
+        }`}
+        onClick={onClick}
+        whileHover={{ scale: isSelected ? 1.05 : 1.08 }}
+        whileTap={{ scale: 0.95 }}
+      >
+        {/* Indicateur de touche numérique */}
+        {keyNumber && (
+          <div className="absolute -top-1 -left-1 text-xs font-mono bg-black/70 px-1 rounded z-10 text-white/80">
+            {keyNumber}
+          </div>
+        )}
       {/* Target indicator */}
       {isSelected && (
         <motion.div
@@ -79,7 +89,8 @@ function TargetOption({ target, isSelected, onClick, isEnemy }) {
           {target.status === 'asleep' && '💤'}
         </div>
       )}
-    </motion.button>
+      </motion.button>
+    </FocusIndicator>
   );
 }
 
@@ -106,6 +117,37 @@ export default function TargetSelector({
                 targetType === TARGET_TYPES.ALL_ALLIES ||
                 targetType === TARGET_TYPES.ALL_OTHER;
 
+  // Separate enemies and allies for display
+  const enemies = validTargets.filter(t => t.isEnemy !== attacker.isEnemy);
+  const allies = validTargets.filter(t => t.isEnemy === attacker.isEnemy && t.id !== attacker.id);
+
+  // Liste des cibles sélectionnables (uniquement pour les non-AOE et non-self)
+  const selectableTargets = !isSelfTarget && !isAOE ? [...enemies, ...allies] : [];
+
+  // Configuration de la navigation clavier
+  const {
+    selectedIndex,
+    isKeyboardFocused,
+    getItemProps,
+  } = useKeyboardNavigation({
+    items: selectableTargets,
+    enabled: selectableTargets.length > 0 && keybindManager.isEnabled(),
+    layout: 'list',
+    onSelect: (target, index) => {
+      onSelectTarget(target.id);
+    },
+    onChange: (target) => {
+      // Auto-sélectionner la cible lors de la navigation
+      if (target) {
+        onSelectTarget(target.id);
+      }
+    },
+    onCancel,
+    enableNumberKeys: true,
+    loop: true,
+    initialIndex: selectableTargets.findIndex(t => t.id === selectedTargetId),
+  });
+
   // Get display info based on target type
   const getTargetTypeLabel = () => {
     switch (targetType) {
@@ -127,10 +169,6 @@ export default function TargetSelector({
         return 'Select target';
     }
   };
-
-  // Separate enemies and allies for display
-  const enemies = validTargets.filter(t => t.isEnemy !== attacker.isEnemy);
-  const allies = validTargets.filter(t => t.isEnemy === attacker.isEnemy && t.id !== attacker.id);
 
   return (
     <motion.div
@@ -190,15 +228,24 @@ export default function TargetSelector({
             <span>👾</span> Enemies
           </p>
           <div className="flex flex-wrap gap-2 justify-center">
-            {enemies.map(target => (
-              <TargetOption
-                key={target.id}
-                target={target}
-                isEnemy={true}
-                isSelected={isAOE || selectedTargetId === target.id}
-                onClick={() => !isAOE && onSelectTarget(target.id)}
-              />
-            ))}
+            {enemies.map((target, localIndex) => {
+              const globalIndex = selectableTargets.findIndex(t => t.id === target.id);
+              const isKbFocused = globalIndex === selectedIndex && isKeyboardFocused;
+              const keyNum = globalIndex >= 0 ? (globalIndex + 1).toString() : null;
+
+              return (
+                <div key={target.id} {...(globalIndex >= 0 ? getItemProps(globalIndex) : {})}>
+                  <TargetOption
+                    target={target}
+                    isEnemy={true}
+                    isSelected={isAOE || selectedTargetId === target.id}
+                    isKeyboardFocused={isKbFocused}
+                    keyNumber={keyNum}
+                    onClick={() => !isAOE && onSelectTarget(target.id)}
+                  />
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
@@ -210,15 +257,24 @@ export default function TargetSelector({
             <span>🤝</span> Allies
           </p>
           <div className="flex flex-wrap gap-2 justify-center">
-            {allies.map(target => (
-              <TargetOption
-                key={target.id}
-                target={target}
-                isEnemy={false}
-                isSelected={isAOE || selectedTargetId === target.id}
-                onClick={() => !isAOE && onSelectTarget(target.id)}
-              />
-            ))}
+            {allies.map((target, localIndex) => {
+              const globalIndex = selectableTargets.findIndex(t => t.id === target.id);
+              const isKbFocused = globalIndex === selectedIndex && isKeyboardFocused;
+              const keyNum = globalIndex >= 0 ? (globalIndex + 1).toString() : null;
+
+              return (
+                <div key={target.id} {...(globalIndex >= 0 ? getItemProps(globalIndex) : {})}>
+                  <TargetOption
+                    target={target}
+                    isEnemy={false}
+                    isSelected={isAOE || selectedTargetId === target.id}
+                    isKeyboardFocused={isKbFocused}
+                    keyNumber={keyNum}
+                    onClick={() => !isAOE && onSelectTarget(target.id)}
+                  />
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

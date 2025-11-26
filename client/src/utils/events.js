@@ -630,6 +630,80 @@ export const CHOICE_EVENTS = [
       },
     ],
   },
+  // Cursed Shrine (Risk/Reward)
+  {
+    id: 'cursed_shrine',
+    title: '⛩️ Cursed Shrine',
+    description: 'A shrine radiates dark energy. It demands a sacrifice for power.',
+    icon: '⛩️',
+    floorRange: [5, 20],
+    choices: [
+      {
+        id: 'sacrifice_hp',
+        label: 'Sacrifice 30% Max HP',
+        description: 'Gain a Rare/Legendary Relic',
+        outcomes: [
+          { type: 'damage_percent', value: 0.3, weight: 100, message: 'The shrine drains your life force...' },
+          { type: 'gain_relic', tier: 'rare', weight: 70, message: 'And grants you a rare artifact!' },
+          { type: 'gain_relic', tier: 'legendary', weight: 30, message: 'And grants you a legendary artifact!' },
+        ],
+        multiOutcome: true,
+      },
+      {
+        id: 'cleanse',
+        label: 'Cleanse the shrine',
+        description: 'Heal 20% HP',
+        outcomes: [
+          { type: 'heal_percent', value: 0.2, weight: 100, message: 'The shrine is purified and heals you.' },
+        ],
+      },
+      {
+        id: 'ignore',
+        label: 'Ignore',
+        description: 'Walk away',
+        outcomes: [
+          { type: 'nothing', weight: 100, message: 'You leave the shrine alone.' },
+        ],
+      },
+    ],
+  },
+
+  // Move Tutor (Rare Moves)
+  {
+    id: 'move_tutor_event',
+    title: '🧙 Grand Move Tutor',
+    description: 'A legendary martial artist offers to teach your Pokemon a secret technique.',
+    icon: '🧙',
+    floorRange: [8, 20],
+    choices: [
+      {
+        id: 'learn_rare',
+        label: 'Learn Secret Technique',
+        description: 'Replace a move with a rare one',
+        cost: { gold: 100 },
+        outcomes: [
+          { type: 'learn_move', rarity: 'rare', weight: 100, message: 'The master teaches you a secret move!' },
+        ],
+      },
+      {
+        id: 'learn_common',
+        label: 'Learn Basic Technique',
+        description: 'Replace a move with a standard one',
+        cost: { gold: 40 },
+        outcomes: [
+          { type: 'learn_move', rarity: 'common', weight: 100, message: 'The master teaches you a solid move.' },
+        ],
+      },
+      {
+        id: 'leave',
+        label: 'Decline',
+        description: 'Your moves are fine',
+        outcomes: [
+          { type: 'nothing', weight: 100, message: 'You bow and leave.' },
+        ],
+      },
+    ],
+  },
 ];
 
 /**

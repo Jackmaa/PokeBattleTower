@@ -3,37 +3,16 @@
 
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import typeColors from "../utils/typeColors";
-import { TARGET_TYPES } from "../utils/moves";
 import { Card, Button } from "./ui";
-
-// Check if move is AOE
-const isAOEMove = (target) => {
-  return target === TARGET_TYPES.ALL_ENEMIES ||
-         target === TARGET_TYPES.ALL_ALLIES ||
-         target === TARGET_TYPES.ALL_OTHER;
-};
-
-// Status effect configuration for badges
-const STATUS_CONFIG = {
-  poisoned: { emoji: '☠️', color: 'rgba(168, 85, 247, 0.5)', border: 'rgba(168, 85, 247, 0.7)', text: '#d8b4fe' },
-  badly_poisoned: { emoji: '☠️', color: 'rgba(147, 51, 234, 0.5)', border: 'rgba(147, 51, 234, 0.7)', text: '#c084fc' },
-  paralyzed: { emoji: '⚡', color: 'rgba(234, 179, 8, 0.5)', border: 'rgba(234, 179, 8, 0.7)', text: '#fde047' },
-  burned: { emoji: '🔥', color: 'rgba(249, 115, 22, 0.5)', border: 'rgba(249, 115, 22, 0.7)', text: '#fdba74' },
-  frozen: { emoji: '❄️', color: 'rgba(6, 182, 212, 0.5)', border: 'rgba(6, 182, 212, 0.7)', text: '#67e8f9' },
-};
-
-// Effect type badges
-const EFFECT_CONFIG = {
-  recoil: { emoji: '💔', label: 'Recoil', color: 'rgba(239, 68, 68, 0.5)', border: 'rgba(239, 68, 68, 0.7)', text: '#fca5a5' },
-  flinch: { emoji: '😵', label: 'Flinch', color: 'rgba(251, 191, 36, 0.5)', border: 'rgba(251, 191, 36, 0.7)', text: '#fde047' },
-  team_buff: { emoji: '🛡️', label: 'Team Buff', color: 'rgba(59, 130, 246, 0.5)', border: 'rgba(59, 130, 246, 0.7)', text: '#93c5fd' },
-  heal: { emoji: '💚', label: 'Heal', color: 'rgba(34, 197, 94, 0.5)', border: 'rgba(34, 197, 94, 0.7)', text: '#86efac' },
-  stat_change: { emoji: '📊', label: 'Stats', color: 'rgba(168, 85, 247, 0.5)', border: 'rgba(168, 85, 247, 0.7)', text: '#d8b4fe' },
-};
+import { useMoveDisplay } from "../hooks/ui/useMoveDisplay";
 
 function MoveCard({ move, isSelected, onSelect, isNewMove = false }) {
-  const typeColor = typeColors[move.type] || "#999";
+  const { typeColor, badges, styles, isAOE } = useMoveDisplay(move, {
+    showEnhancedInfo: true,
+    showSkillLevel: true,
+    showFused: true,
+    showPP: false,
+  });
 
   return (
     <motion.div
@@ -83,38 +62,23 @@ function MoveCard({ move, isSelected, onSelect, isNewMove = false }) {
         </div>
       </div>
 
-      {/* Effect Badges */}
+      {/* Effect Badges - Using useMoveDisplay hook */}
       <div className="flex items-center gap-1.5 mb-2 flex-wrap">
-        {isAOEMove(move.target) && (
-          <span className="px-1.5 py-0.5 text-[10px] font-bold rounded border bg-orange-500/30 border-orange-400/50 text-orange-300">
-            💥 AOE
-          </span>
-        )}
-        {move.effect?.type && EFFECT_CONFIG[move.effect.type] && (
+        {badges.map((badge, index) => (
           <span
+            key={`${badge.type}-${index}`}
             className="px-1.5 py-0.5 text-[10px] font-bold rounded border"
             style={{
-              backgroundColor: EFFECT_CONFIG[move.effect.type].color,
-              borderColor: EFFECT_CONFIG[move.effect.type].border,
-              color: EFFECT_CONFIG[move.effect.type].text,
+              backgroundColor: badge.color,
+              borderColor: badge.border,
+              color: badge.text,
             }}
           >
-            {EFFECT_CONFIG[move.effect.type].emoji} {EFFECT_CONFIG[move.effect.type].label}
-            {move.effect.percent && ` ${move.effect.percent}%`}
+            {badge.label}
+            {badge.type === 'effect' && move.effect?.percent && ` ${move.effect.percent}%`}
+            {badge.type === 'status' && ` ${move.effect?.chance || 100}%`}
           </span>
-        )}
-        {move.effect?.status && STATUS_CONFIG[move.effect.status] && (
-          <span
-            className="px-1.5 py-0.5 text-[10px] font-bold rounded border"
-            style={{
-              backgroundColor: STATUS_CONFIG[move.effect.status].color,
-              borderColor: STATUS_CONFIG[move.effect.status].border,
-              color: STATUS_CONFIG[move.effect.status].text,
-            }}
-          >
-            {STATUS_CONFIG[move.effect.status].emoji} {move.effect.chance || 100}%
-          </span>
-        )}
+        ))}
       </div>
 
       {/* Move Stats */}
@@ -224,9 +188,10 @@ export default function MoveLearningModal({
             {/* Current Moves */}
             <div className="mb-6">
               <h3 className="text-lg font-bold text-white mb-3">
-                Current Moves (Select one to replace):
+                Current Moves (Select a slot):
               </h3>
               <div className="grid grid-cols-2 gap-3">
+                {/* Render existing moves */}
                 {pokemon.moves.map((move, index) => (
                   <MoveCard
                     key={move.id || index}
@@ -235,6 +200,39 @@ export default function MoveLearningModal({
                     onSelect={() => setSelectedMoveIndex(index)}
                   />
                 ))}
+                
+                {/* Render empty slots */}
+                {Array.from({ length: 4 - pokemon.moves.length }).map((_, i) => {
+                  const slotIndex = pokemon.moves.length + i;
+                  return (
+                    <motion.div
+                      key={`empty-${i}`}
+                      onClick={() => setSelectedMoveIndex(slotIndex)}
+                      className={`relative p-4 rounded-lg border-2 border-dashed cursor-pointer transition-all duration-200 flex items-center justify-center min-h-[120px] ${
+                        selectedMoveIndex === slotIndex 
+                          ? "border-gaming-accent bg-gaming-accent/10" 
+                          : "border-white/20 bg-white/5 hover:bg-white/10"
+                      }`}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      <div className="text-center">
+                        <span className="text-2xl mb-2 block">✨</span>
+                        <span className="text-white/60 font-bold">Empty Slot</span>
+                      </div>
+                      
+                      {/* Selection indicator */}
+                      {selectedMoveIndex === slotIndex && (
+                        <motion.div
+                          className="absolute inset-0 rounded-lg border-2 border-gaming-accent pointer-events-none"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          layoutId="moveSelection"
+                        />
+                      )}
+                    </motion.div>
+                  );
+                })}
               </div>
             </div>
 
@@ -246,8 +244,16 @@ export default function MoveLearningModal({
                 animate={{ opacity: 1, y: 0 }}
               >
                 <p className="text-yellow-200 text-center">
-                  Replace <span className="font-bold">{pokemon.moves[selectedMoveIndex].name}</span> with{" "}
-                  <span className="font-bold text-green-400">{newMove.name}</span>?
+                  {pokemon.moves[selectedMoveIndex] ? (
+                    <>
+                      Replace <span className="font-bold">{pokemon.moves[selectedMoveIndex].name}</span> with{" "}
+                      <span className="font-bold text-green-400">{newMove.name}</span>?
+                    </>
+                  ) : (
+                    <>
+                      Learn <span className="font-bold text-green-400">{newMove.name}</span> in empty slot?
+                    </>
+                  )}
                 </p>
               </motion.div>
             )}

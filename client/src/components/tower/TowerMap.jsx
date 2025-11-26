@@ -1,11 +1,15 @@
 // 📁 TowerMap.jsx
-// Tower map visualization component - Slay the Spire style
+// Tower map visualization component - Cosmic Theme
 
 import { motion } from "framer-motion";
+import { useState } from "react";
 import { NODE_CONFIG, calculateNodePosition } from "../../utils/towerMap";
+import { TERRAIN_CONFIG } from "../../utils/terrain";
 import { Card } from "../ui";
 
-export default function TowerMap({ map, currentNodeId, onNodeSelect }) {
+export default function TowerMap({ map, currentNodeId, onNodeSelect, onNodeHover }) {
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+
   if (!map || map.length === 0) {
     return null;
   }
@@ -17,236 +21,284 @@ export default function TowerMap({ map, currentNodeId, onNodeSelect }) {
   const svgWidth = maxColumns * columnWidth + 100;
   const svgHeight = map.length * floorHeight + 120;
 
+  // Parallax effect handler
+  const handleMouseMove = (e) => {
+    const { clientX, clientY } = e;
+    const centerX = window.innerWidth / 2;
+    const centerY = window.innerHeight / 2;
+    setMousePos({
+      x: (clientX - centerX) / 50,
+      y: (clientY - centerY) / 50,
+    });
+  };
+
   return (
-    <Card className="p-6 bg-gradient-to-b from-black/80 to-black/60 overflow-auto max-h-[80vh]">
-      <h2 className="text-3xl font-bold text-center mb-6 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-        Tower Map
-      </h2>
+    <Card 
+      className="relative p-0 bg-black overflow-hidden h-[80vh] border-2 border-purple-900/50 shadow-2xl shadow-purple-900/20"
+      onMouseMove={handleMouseMove}
+    >
+      {/* Cosmic Background Layers */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-slate-900 via-[#0a0a0a] to-black" />
+      
+      {/* Stars Layer 1 (Slow) */}
+      <motion.div 
+        className="absolute inset-0 opacity-50"
+        style={{ 
+          backgroundImage: 'radial-gradient(white 1px, transparent 1px)',
+          backgroundSize: '50px 50px',
+          x: mousePos.x * -1,
+          y: mousePos.y * -1
+        }}
+      />
+      
+      {/* Stars Layer 2 (Fast) */}
+      <motion.div 
+        className="absolute inset-0 opacity-30"
+        style={{ 
+          backgroundImage: 'radial-gradient(blue 1px, transparent 1px)',
+          backgroundSize: '30px 30px',
+          x: mousePos.x * -2,
+          y: mousePos.y * -2
+        }}
+      />
 
-      <div className="relative w-full overflow-x-auto">
-        <svg
-          width={svgWidth}
-          height={svgHeight}
-          className="mx-auto"
-          style={{ minWidth: '800px' }}
-        >
-          {/* Draw connections first (so they appear behind nodes) */}
-          {map.map((floor, floorIndex) =>
-            floor.map(node => {
-              const nodePos = calculateNodePosition(node, maxColumns, floorHeight, columnWidth);
+      {/* Nebula Overlay */}
+      <div className="absolute inset-0 bg-gradient-to-t from-purple-900/20 via-transparent to-blue-900/20 pointer-events-none" />
 
-              return node.connections.map(connectionId => {
-                // Find the connected node
-                const nextFloor = map[floorIndex + 1];
-                if (!nextFloor) return null;
+      <div className="relative z-10 w-full h-full overflow-auto custom-scrollbar">
+        <h2 className="sticky top-0 z-20 text-3xl font-bold text-center py-6 bg-gradient-to-b from-black/90 to-transparent bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">
+          Cosmic Tower
+        </h2>
 
-                const connectedNode = nextFloor.find(n => n.id === connectionId);
-                if (!connectedNode) return null;
+        <div className="relative w-full overflow-x-auto pb-20">
+          <svg
+            width={svgWidth}
+            height={svgHeight}
+            className="mx-auto"
+            style={{ minWidth: '800px' }}
+          >
+            {/* Draw connections first */}
+            {map.map((floor, floorIndex) =>
+              floor.map(node => {
+                const nodePos = calculateNodePosition(node, maxColumns, floorHeight, columnWidth);
 
-                const connectedPos = calculateNodePosition(connectedNode, maxColumns, floorHeight, columnWidth);
+                return node.connections.map(connectionId => {
+                  const nextFloor = map[floorIndex + 1];
+                  if (!nextFloor) return null;
 
-                // Determine line color based on availability
-                const isActive = node.visited || node.id === currentNodeId;
-                const isNextAvailable = connectedNode.available;
-                const lineColor = isActive && isNextAvailable
-                  ? '#60a5fa' // Blue for available paths
-                  : node.visited
-                  ? '#6b7280' // Gray for visited
-                  : '#374151'; // Dark gray for unavailable
+                  const connectedNode = nextFloor.find(n => n.id === connectionId);
+                  if (!connectedNode) return null;
 
-                const lineWidth = isActive && isNextAvailable ? 3 : 2;
+                  const connectedPos = calculateNodePosition(connectedNode, maxColumns, floorHeight, columnWidth);
+
+                  const isActive = node.visited || node.id === currentNodeId;
+                  const isNextAvailable = connectedNode.available;
+                  
+                  // Energy Flow Color
+                  const strokeColor = isActive && isNextAvailable ? '#60a5fa' : '#374151';
+                  
+                  return (
+                    <g key={`${node.id}-${connectionId}`}>
+                      {/* Base Line */}
+                      <line
+                        x1={nodePos.x}
+                        y1={nodePos.y}
+                        x2={connectedPos.x}
+                        y2={connectedPos.y}
+                        stroke={strokeColor}
+                        strokeWidth={isActive && isNextAvailable ? 2 : 1}
+                        strokeOpacity={0.3}
+                      />
+                      
+                      {/* Energy Flow Animation */}
+                      {(isActive && isNextAvailable) && (
+                        <motion.line
+                          x1={nodePos.x}
+                          y1={nodePos.y}
+                          x2={connectedPos.x}
+                          y2={connectedPos.y}
+                          stroke={strokeColor}
+                          strokeWidth={2}
+                          strokeDasharray="10,10"
+                          animate={{ strokeDashoffset: [0, -20] }}
+                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                        />
+                      )}
+                    </g>
+                  );
+                });
+              })
+            )}
+
+            {/* Draw nodes */}
+            {map.map((floor, floorIndex) =>
+              floor.map((node, nodeIndex) => {
+                const position = calculateNodePosition(node, maxColumns, floorHeight, columnWidth);
+                const config = NODE_CONFIG[node.type];
+
+                const isCurrent = node.id === currentNodeId;
+                const isAvailable = node.available && !node.visited;
+                const isVisited = node.visited;
+                const isClickable = isAvailable && !isCurrent;
 
                 return (
-                  <motion.line
-                    key={`${node.id}-${connectionId}`}
-                    x1={nodePos.x}
-                    y1={nodePos.y}
-                    x2={connectedPos.x}
-                    y2={connectedPos.y}
-                    stroke={lineColor}
-                    strokeWidth={lineWidth}
-                    strokeDasharray={!isActive ? "5,5" : "0"}
-                    initial={{ pathLength: 0, opacity: 0 }}
-                    animate={{ pathLength: 1, opacity: 0.6 }}
-                    transition={{ duration: 0.5, delay: floorIndex * 0.1 }}
-                  />
-                );
-              });
-            })
-          )}
-
-          {/* Draw nodes */}
-          {map.map((floor, floorIndex) =>
-            floor.map((node, nodeIndex) => {
-              const position = calculateNodePosition(node, maxColumns, floorHeight, columnWidth);
-              const config = NODE_CONFIG[node.type];
-
-              const isCurrent = node.id === currentNodeId;
-              const isAvailable = node.available && !node.visited;
-              const isVisited = node.visited;
-              const isClickable = isAvailable && !isCurrent;
-
-              return (
-                <g
-                  key={node.id}
-                  transform={`translate(${position.x}, ${position.y})`}
-                  style={{ cursor: isClickable ? 'pointer' : 'default' }}
-                  onClick={() => isClickable && onNodeSelect(node)}
-                >
-                  {/* Node background circle */}
-                  <motion.circle
-                    r={isCurrent ? 35 : 30}
-                    fill={
-                      isCurrent
-                        ? config.color
-                        : isVisited
-                        ? '#4b5563'
-                        : isAvailable
-                        ? config.color
-                        : '#1f2937'
-                    }
-                    stroke={config.color}
-                    strokeWidth={isCurrent ? 4 : 2}
-                    opacity={isVisited ? 0.5 : 1}
-                    initial={{ scale: 0 }}
-                    animate={{
-                      scale: 1,
-                      boxShadow: isCurrent
-                        ? `0 0 20px ${config.color}`
-                        : 'none',
-                    }}
-                    transition={{
-                      type: "spring",
-                      delay: floorIndex * 0.1 + nodeIndex * 0.05,
-                    }}
-                    whileHover={isClickable ? { scale: 1.15 } : {}}
-                  />
-
-                  {/* Glow effect for current node */}
-                  {isCurrent && (
-                    <motion.circle
-                      r={40}
-                      fill="none"
-                      stroke={config.color}
-                      strokeWidth={2}
-                      opacity={0.3}
-                      animate={{
-                        scale: [1, 1.2, 1],
-                        opacity: [0.3, 0.6, 0.3],
-                      }}
-                      transition={{
-                        duration: 2,
-                        repeat: Infinity,
-                        ease: "easeInOut",
-                      }}
-                    />
-                  )}
-
-                  {/* Available pulse animation */}
-                  {isAvailable && !isCurrent && (
-                    <motion.circle
-                      r={35}
-                      fill="none"
-                      stroke={config.color}
-                      strokeWidth={2}
-                      animate={{
-                        scale: [1, 1.3],
-                        opacity: [0.5, 0],
-                      }}
-                      transition={{
-                        duration: 1.5,
-                        repeat: Infinity,
-                        ease: "easeOut",
-                      }}
-                    />
-                  )}
-
-                  {/* Node icon */}
-                  <text
-                    fontSize={isCurrent ? "28" : "24"}
-                    textAnchor="middle"
-                    dominantBaseline="central"
-                    fill="white"
-                    style={{ pointerEvents: 'none', userSelect: 'none' }}
+                  <g
+                    key={node.id}
+                    transform={`translate(${position.x}, ${position.y})`}
+                    style={{ cursor: isClickable ? 'pointer' : 'default' }}
+                    onClick={() => isClickable && onNodeSelect(node)}
+                    onMouseEnter={() => onNodeHover && onNodeHover(node)}
                   >
-                    {config.icon}
-                  </text>
-
-                  {/* Checkmark for visited nodes */}
-                  {isVisited && !isCurrent && (
-                    <text
-                      x={18}
-                      y={-18}
-                      fontSize="16"
-                      fill="#10b981"
-                      style={{ pointerEvents: 'none' }}
-                    >
-                      ✓
-                    </text>
-                  )}
-
-                  {/* Tooltip on hover */}
-                  {isClickable && (
-                    <motion.g
-                      initial={{ opacity: 0 }}
-                      whileHover={{ opacity: 1 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      <rect
-                        x={-60}
-                        y={-70}
-                        width={120}
-                        height={30}
-                        rx={5}
-                        fill="#1f2937"
-                        stroke={config.color}
-                        strokeWidth={2}
+                    {/* Outer Glow for Current/Available */}
+                    {(isCurrent || isAvailable) && (
+                      <motion.circle
+                        r={isCurrent ? 45 : 35}
+                        fill={config.color}
+                        opacity={0.2}
+                        animate={{ scale: [1, 1.2, 1], opacity: [0.2, 0.4, 0.2] }}
+                        transition={{ duration: 2, repeat: Infinity }}
                       />
+                    )}
+
+                    {/* Node Body */}
+                    <circle
+                      r={30}
+                      fill="#0f172a"
+                      stroke={config.color}
+                      strokeWidth={isCurrent ? 3 : 2}
+                      className="drop-shadow-lg"
+                    />
+
+                    {/* Inner Fill (Visited/Current) */}
+                    {(isVisited || isCurrent) && (
+                      <circle
+                        r={26}
+                        fill={config.color}
+                        opacity={isCurrent ? 0.3 : 0.1}
+                      />
+                    )}
+
+                    {/* Icon */}
+                    <text
+                      fontSize="24"
+                      textAnchor="middle"
+                      dominantBaseline="central"
+                      fill="white"
+                      style={{ pointerEvents: 'none', userSelect: 'none', filter: 'drop-shadow(0 0 2px black)' }}
+                    >
+                      {config.icon}
+                    </text>
+
+                    {/* Checkmark */}
+                    {isVisited && !isCurrent && (
                       <text
-                        y={-52}
-                        fontSize="12"
-                        textAnchor="middle"
-                        fill="white"
-                        fontWeight="bold"
+                        x={18}
+                        y={-18}
+                        fontSize="16"
+                        fill="#10b981"
                         style={{ pointerEvents: 'none' }}
                       >
-                        {config.label}
+                        ✓
                       </text>
-                    </motion.g>
-                  )}
-                </g>
+                    )}
+
+                    {/* Tooltip with Scouting Info */}
+                    {isClickable && (
+                      <motion.g
+                        initial={{ opacity: 0, y: 10 }}
+                        whileHover={{ opacity: 1, y: 0 }}
+                      >
+                        <rect
+                          x={-90}
+                          y={-95}
+                          width={180}
+                          height={node.enemies ? 75 : 45}
+                          rx={8}
+                          fill="#0f172a"
+                          stroke={config.color}
+                          strokeWidth={1}
+                          fillOpacity={0.95}
+                        />
+                        <text
+                          y={-77}
+                          fontSize="14"
+                          textAnchor="middle"
+                          fill="white"
+                          fontWeight="bold"
+                          style={{ pointerEvents: 'none' }}
+                        >
+                          {config.label}
+                        </text>
+                        
+                        {/* Terrain Info */}
+                        {node.terrain && (
+                          <text
+                            y={-60}
+                            fontSize="10"
+                            textAnchor="middle"
+                            fill={TERRAIN_CONFIG[node.terrain]?.color || '#fff'}
+                            style={{ pointerEvents: 'none' }}
+                          >
+                            {TERRAIN_CONFIG[node.terrain]?.icon} {TERRAIN_CONFIG[node.terrain]?.name}
+                          </text>
+                        )}
+                        
+                        {/* Enemy Info (Scouted) */}
+                        {node.enemies && (
+                          <>
+                            <text
+                              y={-42}
+                              fontSize="9"
+                              textAnchor="middle"
+                              fill="#94a3b8"
+                              style={{ pointerEvents: 'none' }}
+                            >
+                              {node.enemies.length} {node.enemies.length === 1 ? 'Enemy' : 'Enemies'}
+                            </text>
+                            <text
+                              y={-30}
+                              fontSize="8"
+                              textAnchor="middle"
+                              fill="#64748b"
+                              style={{ pointerEvents: 'none' }}
+                            >
+                              {node.enemies.map(e => e.name).slice(0, 2).join(', ')}
+                              {node.enemies.length > 2 ? '...' : ''}
+                            </text>
+                          </>
+                        )}
+                      </motion.g>
+                    )}
+                  </g>
+                );
+              })
+            )}
+          </svg>
+        </div>
+
+        {/* Legend */}
+        <div className="sticky bottom-0 bg-black/80 backdrop-blur-md border-t border-white/10 p-4">
+          <div className="flex flex-wrap justify-center gap-4">
+            {Object.entries(NODE_CONFIG).map(([type, config]) => {
+              if (type === 'start') return null;
+              return (
+                <div key={type} className="flex items-center gap-2">
+                  <div 
+                    className="w-6 h-6 rounded-full flex items-center justify-center text-xs border"
+                    style={{ 
+                      backgroundColor: `${config.color}20`,
+                      borderColor: config.color,
+                      color: config.color
+                    }}
+                  >
+                    {config.icon}
+                  </div>
+                  <span className="text-xs text-gray-300 font-medium">{config.label}</span>
+                </div>
               );
-            })
-          )}
-        </svg>
-      </div>
-
-      {/* Legend */}
-      <div className="mt-6 grid grid-cols-2 md:grid-cols-3 gap-3">
-        {Object.entries(NODE_CONFIG).map(([type, config]) => {
-          if (type === 'start') return null; // Don't show start in legend
-
-          return (
-            <div
-              key={type}
-              className="flex items-center gap-2 p-2 rounded-lg bg-white/5 border border-white/10"
-            >
-              <div
-                className="w-8 h-8 rounded-full flex items-center justify-center text-lg"
-                style={{
-                  backgroundColor: config.color,
-                  boxShadow: `0 0 10px ${config.color}40`,
-                }}
-              >
-                {config.icon}
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-bold text-white">{config.label}</p>
-                <p className="text-xs text-white/60">{config.description}</p>
-              </div>
-            </div>
-          );
-        })}
+            })}
+          </div>
+        </div>
       </div>
     </Card>
   );

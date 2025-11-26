@@ -43,7 +43,7 @@ function calculateExpectedDamage(attacker, target, move) {
 /**
  * Score a move based on its effects
  */
-function scoreMoveEffects(move, attacker, target, battleState) {
+function scoreMoveEffects(move, attacker, target, battleState, aiDifficulty) {
   let score = 0;
 
   if (!move.effect) return score;
@@ -81,6 +81,11 @@ function scoreMoveEffects(move, attacker, target, battleState) {
       // Adjust by chance to apply
       const chance = effect.chance || 100;
       score = Math.floor(score * chance / 100);
+
+      // Boss/Elite AI prefers applying status early
+      if ((aiDifficulty === AI_DIFFICULTY.BOSS || aiDifficulty === AI_DIFFICULTY.ELITE) && !target.status) {
+        score += 20;
+      }
     }
   }
 
@@ -92,6 +97,11 @@ function scoreMoveEffects(move, attacker, target, battleState) {
       // Self stat changes (can be positive or negative)
       if (stages > 0) {
         score += stages * 15; // Buffs are good
+        
+        // Boss AI prefers setup when healthy
+        if (aiDifficulty === AI_DIFFICULTY.BOSS && attacker.currentHP / attacker.maxHP > 0.7) {
+          score += 30;
+        }
       } else {
         score += stages * 10; // Debuff self is bad, but may be worth it for power
       }
@@ -120,6 +130,11 @@ function scoreMoveEffects(move, attacker, target, battleState) {
       score += 30;
     } else {
       score -= 20; // Don't heal when near full
+    }
+    
+    // Boss AI ensures it heals when critical
+    if (aiDifficulty === AI_DIFFICULTY.BOSS && missingPercent > 0.7) {
+      score += 50;
     }
   }
 
@@ -213,6 +228,12 @@ function scoreTarget(target, attacker, move, aiDifficulty) {
       const totalBoosts = Object.values(target.statStages).reduce((sum, s) => sum + Math.max(0, s), 0);
       score += totalBoosts * 10;
     }
+    
+    // Target Healers (Check if target has healing moves)
+    const hasHealingMove = target.pokemon.moves.some(m => m.effect && m.effect.type === 'heal');
+    if (hasHealingMove) {
+      score += 40; // Focus the healer!
+    }
   }
 
   // Don't waste strong moves on weak targets (boss AI)
@@ -245,7 +266,7 @@ function scoreMoveTargetCombo(attacker, move, target, battleState, aiDifficulty)
 
   // Effect scoring (for smart+ AI)
   if (aiDifficulty !== AI_DIFFICULTY.RANDOM && aiDifficulty !== AI_DIFFICULTY.BASIC) {
-    score += scoreMoveEffects(move, attacker, target, battleState);
+    score += scoreMoveEffects(move, attacker, target, battleState, aiDifficulty);
   }
 
   // Target scoring

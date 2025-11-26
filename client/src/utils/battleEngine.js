@@ -2,6 +2,7 @@
 // Core battle engine for turn-based NvM combat
 
 import { getTypeEffectiveness } from './typeChart';
+import { getTerrainBonus } from './terrain';
 
 /**
  * Combat participant wrapper
@@ -26,9 +27,12 @@ export function createCombatant(pokemon, isEnemy = false, index = 0) {
       accuracy: 0,
       evasion: 0,
     },
-    // Status effects
-    status: null, // 'paralyzed', 'burned', 'poisoned', 'frozen', 'asleep'
+    // Status effects - NOW SUPPORTS MULTIPLE STATUSES!
+    status: null, // Legacy: first active status for backwards compatibility
     statusTurns: 0,
+    statusStacks: 0, // Legacy: stacks of first status
+    statuses: {}, // NEW: Object holding all statuses { burned: 2, poisoned: 1, ... }
+    statusTurnsMap: {}, // NEW: Turns for each status
     // Volatile status (clears on switch)
     volatileStatus: [],
     // Targeting
@@ -56,6 +60,7 @@ export function getEffectiveStat(baseStat, stage) {
 
 /**
  * Get combatant's effective speed (with stages and status)
+ * Now accounts for frozen stacks!
  */
 export function getEffectiveSpeed(combatant) {
   const baseSpeed = combatant.pokemon.stats.speed;
@@ -64,6 +69,12 @@ export function getEffectiveSpeed(combatant) {
   // Paralysis halves speed
   if (combatant.status === 'paralyzed') {
     speed = Math.floor(speed * 0.5);
+  }
+
+  // Frozen stacks reduce speed (10% per stack)
+  if (combatant.status === 'frozen' && combatant.statusStacks > 0) {
+    const frozenReduction = Math.max(0.5, 1 - (combatant.statusStacks * 0.1));
+    speed = Math.floor(speed * frozenReduction);
   }
 
   return speed;
@@ -370,7 +381,9 @@ export class BattleState {
         isCurrent: c === this.getCurrentCombatant(),
         targetedBy: c.targetedBy,
         currentTarget: c.currentTarget,
-        status: c.status,
+        status: c.status, // Legacy: first status for backwards compatibility
+        statuses: c.statuses || {}, // NEW: Full statuses object with stacks
+        statusStacks: c.statusStacks || 0, // Legacy: stacks of first status
       })),
       currentTurnIndex: this.currentTurnIndex,
       roundNumber: this.roundNumber,
@@ -384,13 +397,31 @@ export class BattleState {
  * Calculate damage for an attack
  */
 
-export function calculateBattleDamage(attacker, defender, move, relicBonuses = null) {
+export function calculateBattleDamage(attacker, defender, move, relicBonuses = null, terrain = null) {
+  if (move.category === 'status') return { damage: 0, isCritical: false, effectiveness: 1 };
 
   const isPlayerAttacking = !attacker.isEnemy;
+  
+  // Clone move to avoid mutating original
+  let activeMove = { ...move };
+
+  // Apply Type Conversion Relics (Player only)
+  if (isPlayerAttacking && relicBonuses && relicBonuses.type_conversion && relicBonuses.type_conversion.length > 0) {
+    for (const conversion of relicBonuses.type_conversion) {
+      if (activeMove.type === conversion.from) {
+        activeMove.type = conversion.to;
+        // Apply boost if defined
+        if (conversion.boost) {
+          activeMove.power = Math.floor((activeMove.power || 40) * (1 + conversion.boost));
+        }
+        break; // Only one conversion per move
+      }
+    }
+  }
 
   // Get base stats
-  const movePower = move.power || 40;
-  const isPhysical = move.category === 'physical';
+  const movePower = activeMove.power || 40;
+  const isPhysical = activeMove.category === 'physical';
 
   // Get attack stat (with stages)
   let attackStat = isPhysical
@@ -409,9 +440,12 @@ export function calculateBattleDamage(attacker, defender, move, relicBonuses = n
     attackStat += relicBonuses.attack_bonus + relicBonuses.all_stats;
   }
 
-  // Apply burn penalty for physical attacks
+  // Apply burn penalty for physical attacks (now scales with stacks!)
   if (attacker.status === 'burned' && isPhysical) {
-    attackStat = Math.floor(attackStat * 0.5);
+    const burnStacks = attacker.statusStacks || 1;
+    // 1 stack = 0.85x, 2 = 0.70x, 3 = 0.55x, 4 = 0.40x, 5 = 0.25x
+    const burnMultiplier = Math.max(0.25, 1 - (burnStacks * 0.15));
+    attackStat = Math.floor(attackStat * burnMultiplier);
   }
 
   // Base damage formula
@@ -419,9 +453,8 @@ export function calculateBattleDamage(attacker, defender, move, relicBonuses = n
   let damage = Math.max(Math.floor(base / 5), 1);
 
   // Type effectiveness
-  
   const defenderTypes = defender.pokemon.types || [];
-  let typeMultiplier = getTypeEffectiveness(move.type, defenderTypes);
+  let typeMultiplier = getTypeEffectiveness(activeMove.type, defenderTypes);
 
   // Super effective bonus from relics
   if (isPlayerAttacking && relicBonuses && typeMultiplier > 1) {
@@ -429,6 +462,25 @@ export function calculateBattleDamage(attacker, defender, move, relicBonuses = n
   }
 
   damage = Math.floor(damage * typeMultiplier);
+
+  // Terrain Bonus
+  if (terrain) {
+    const terrainMultiplier = getTerrainBonus(terrain, activeMove.type);
+    damage = Math.floor(damage * terrainMultiplier);
+  }
+
+  // STAB (Same Type Attack Bonus)
+  const attackerTypes = attacker.pokemon.types || [];
+  if (attackerTypes.includes(activeMove.type)) {
+    let stabMultiplier = 1.5;
+    
+    // Apply STAB bonus from talents (elemental_mastery)
+    if (isPlayerAttacking && relicBonuses && relicBonuses.stab_bonus) {
+      stabMultiplier += relicBonuses.stab_bonus;
+    }
+    
+    damage = Math.floor(damage * stabMultiplier);
+  }
 
   // Critical hit calculation
   let critChance = 0.0625; // 1/16 base
@@ -451,12 +503,30 @@ export function calculateBattleDamage(attacker, defender, move, relicBonuses = n
     damage = Math.floor(damage * (1 - relicBonuses.resist_damage));
   }
 
+  // Apply Conditional Damage Relics (Player only)
+  if (isPlayerAttacking && relicBonuses && relicBonuses.conditional_damage && relicBonuses.conditional_damage.length > 0) {
+    for (const condition of relicBonuses.conditional_damage) {
+      let conditionMet = false;
+      
+      if (condition.condition === 'status_poisoned') {
+        conditionMet = defender.status === 'poisoned' || defender.status === 'badly_poisoned';
+      } else if (condition.condition === 'target_low_hp') {
+        const hpPercent = defender.currentHP / defender.maxHP;
+        conditionMet = hpPercent <= (condition.threshold || 0.5);
+      }
+      
+      if (conditionMet) {
+        damage = Math.floor(damage * (1 + condition.value));
+      }
+    }
+  }
+
   return {
     damage,
     isCritical,
     typeMultiplier,
-    moveName: move.name,
-    moveType: move.type,
+    moveName: activeMove.name,
+    moveType: activeMove.type,
   };
 }
 

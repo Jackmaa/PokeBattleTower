@@ -1,10 +1,16 @@
 // 📁 pokemonLeveling.js
 // Pokemon XP and Leveling system
+// Now with skill upgrade and fusion opportunities on level up!
 
-import { getRandomLearnableMove } from './moves';
+import { getRandomLearnableMove, MAX_SKILL_LEVEL } from './moves';
+import { checkLevelEvolution } from './evolutions';
+import { getPossibleFusions } from './spellFusion';
 
-// Chance to learn a new move on level up (20%)
-const MOVE_LEARN_CHANCE = 0.20;
+// Chance to learn a new move on level up (80%)
+const MOVE_LEARN_CHANCE = 0.80;
+
+// Chance for level-up choice to appear (always now since we have multiple options)
+const LEVEL_UP_CHOICE_CHANCE = 1.0;
 
 /**
  * XP required for each level (cumulative)
@@ -38,7 +44,7 @@ export function getXPToNextLevel(currentLevel, currentXP) {
 export function calculateXPGain(enemy, playerLevel, floor = 1) {
   // Base XP from enemy level
   const enemyLevel = enemy.level || floor * 3;
-  const baseXP = Math.floor(enemyLevel * 5);
+  const baseXP = Math.floor(enemyLevel * 100); // Buffed to 100x (2000% of original)
 
   // Level difference bonus/penalty
   const levelDiff = enemyLevel - playerLevel;
@@ -65,7 +71,7 @@ export function calculateXPGain(enemy, playerLevel, floor = 1) {
 
   const totalXP = Math.floor(baseXP * levelMultiplier * typeMultiplier * floorBonus);
 
-  return Math.max(1, totalXP);
+  return Math.max(10, totalXP); // Minimum 10 XP
 }
 
 /**
@@ -135,7 +141,7 @@ export function addXPToPokemon(pokemon, xpGained) {
       }
     }
 
-    // Check for move learning opportunity (20% chance per level gained)
+    // Check for move learning opportunity (80% chance per level gained)
     // Only trigger once even if multiple levels gained
     if (Math.random() < MOVE_LEARN_CHANCE * levelsGained) {
       const newMove = getRandomLearnableMove(pokemon);
@@ -143,7 +149,13 @@ export function addXPToPokemon(pokemon, xpGained) {
         pendingMoveLearn = newMove;
       }
     }
+
+    // Always check for upgradable moves and possible fusions
+    // These will be shown in the LevelUpChoiceModal
   }
+
+  // Check for evolution
+  const pendingEvolution = checkLevelEvolution({ ...pokemon, level: newLevel });
 
   const updatedPokemon = {
     ...pokemon,
@@ -152,6 +164,18 @@ export function addXPToPokemon(pokemon, xpGained) {
     stats: newStats,
     baseStats: pokemon.baseStats || pokemon.stats, // Preserve original base stats
   };
+
+  // Check for possible fusions
+  const possibleFusions = leveledUp ? getPossibleFusions(updatedPokemon) : [];
+
+  // Check how many moves can be upgraded
+  const upgradableMoves = leveledUp && updatedPokemon.moves
+    ? updatedPokemon.moves.filter(m => (m.skillLevel || 0) < MAX_SKILL_LEVEL).length
+    : 0;
+
+  // Determine if we should show level-up choice modal
+  // Show if: leveled up AND (has new move OR has upgradable moves OR has fusions)
+  const showLevelUpChoice = leveledUp && (pendingMoveLearn || upgradableMoves > 0 || possibleFusions.length > 0);
 
   return {
     pokemon: updatedPokemon,
@@ -162,6 +186,10 @@ export function addXPToPokemon(pokemon, xpGained) {
     totalXP: currentXP,
     statGains,
     pendingMoveLearn, // New move to potentially learn
+    pendingEvolution, // Evolution to potentially trigger
+    possibleFusions, // Possible move fusions
+    upgradableMoves, // Number of moves that can be upgraded
+    showLevelUpChoice, // Whether to show the level-up choice modal
   };
 }
 
@@ -195,7 +223,8 @@ export function distributeXPToTeam(team, defeatedEnemies, floor, distribution = 
     xpPerPokemon,
     levelUps: [],
     updatedTeam: [],
-    pendingMoveLearn: [], // Array of { pokemonIndex, pokemon, newMove }
+    pendingMoveLearn: [], // Array of { pokemonIndex, pokemon, newMove } - DEPRECATED, use pendingLevelUpChoices
+    pendingLevelUpChoices: [], // Array of { pokemonIndex, pokemon, newMove, possibleFusions, upgradableMoves }
   };
 
   for (let i = 0; i < team.length; i++) {
@@ -215,12 +244,33 @@ export function distributeXPToTeam(team, defeatedEnemies, floor, distribution = 
           statGains: result.statGains,
         });
 
-        // Check for pending move learn
+        // Check for pending move learn (legacy)
         if (result.pendingMoveLearn) {
           results.pendingMoveLearn.push({
             pokemonIndex: i,
             pokemon: result.pokemon,
             newMove: result.pendingMoveLearn,
+          });
+        }
+
+        // Add to pending level up choices if any options available
+        if (result.showLevelUpChoice) {
+          results.pendingLevelUpChoices.push({
+            pokemonIndex: i,
+            pokemon: result.pokemon,
+            newMove: result.pendingMoveLearn,
+            possibleFusions: result.possibleFusions,
+            upgradableMoves: result.upgradableMoves,
+          });
+        }
+
+        // Check for pending evolution
+        if (result.pendingEvolution) {
+          if (!results.pendingEvolutions) results.pendingEvolutions = [];
+          results.pendingEvolutions.push({
+            pokemonIndex: i,
+            pokemon: result.pokemon,
+            evolution: result.pendingEvolution,
           });
         }
       }

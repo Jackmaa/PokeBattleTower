@@ -22,13 +22,13 @@ export default function Button({
   className = '',
   ...props
 }) {
-  const baseClasses = "font-semibold rounded-lg transition-all duration-200 border-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed";
+  const baseClasses = "font-display rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed";
 
   const variantClasses = {
-    primary: "bg-gaming-accent hover:bg-gaming-accent-light text-white hover:shadow-[0_0_20px_rgba(99,102,241,0.5)]",
-    secondary: "bg-white/10 hover:bg-white/20 text-white backdrop-blur-md border border-white/20",
-    danger: "bg-gaming-danger hover:bg-red-600 text-white hover:shadow-[0_0_20px_rgba(239,68,68,0.5)]",
-    success: "bg-gaming-success hover:bg-emerald-600 text-white hover:shadow-[0_0_20px_rgba(16,185,129,0.5)]"
+    primary: "btn-neon-primary",
+    secondary: "btn-neon",
+    danger: "btn-neon border-neon-danger text-neon-danger hover:bg-neon-danger/10 hover:shadow-[0_0_20px_rgba(255,42,109,0.5)]",
+    success: "btn-neon border-neon-emerald text-neon-emerald hover:bg-neon-emerald/10 hover:shadow-[0_0_20px_rgba(0,255,157,0.5)]"
   };
 
   const sizeClasses = {

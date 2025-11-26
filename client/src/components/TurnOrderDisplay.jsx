@@ -7,6 +7,16 @@ import { Card } from "./ui";
 /**
  * Single combatant portrait in turn order
  */
+// Status icon mapping
+const STATUS_ICONS = {
+  paralyzed: '⚡',
+  burned: '🔥',
+  poisoned: '☠️',
+  badly_poisoned: '💀',
+  frozen: '❄️',
+  asleep: '💤',
+};
+
 function CombatantPortrait({
   combatant,
   isCurrent,
@@ -14,7 +24,7 @@ function CombatantPortrait({
   showTargeting = false,
   onTargetClick,
 }) {
-  const { name, sprite, hp, maxHp, isEnemy, status, targetedBy, currentTarget } = combatant;
+  const { name, sprite, hp, maxHp, isEnemy, status, statuses, targetedBy, currentTarget } = combatant;
   const hpPercent = Math.round((hp / maxHp) * 100);
 
   // HP bar color
@@ -24,17 +34,25 @@ function CombatantPortrait({
     return 'bg-red-500';
   };
 
-  // Status indicator
-  const getStatusIcon = () => {
-    switch (status) {
-      case 'paralyzed': return '⚡';
-      case 'burned': return '🔥';
-      case 'poisoned': return '☠️';
-      case 'frozen': return '❄️';
-      case 'asleep': return '💤';
-      default: return null;
+  // Get all active statuses from the statuses object
+  const getActiveStatuses = () => {
+    if (statuses && typeof statuses === 'object') {
+      return Object.entries(statuses)
+        .filter(([_, stacks]) => stacks > 0)
+        .map(([statusName, stacks]) => ({
+          name: statusName,
+          stacks,
+          icon: STATUS_ICONS[statusName] || '❓'
+        }));
     }
+    // Fallback to legacy single status
+    if (status) {
+      return [{ name: status, stacks: combatant.statusStacks || 1, icon: STATUS_ICONS[status] || '❓' }];
+    }
+    return [];
   };
+
+  const activeStatuses = getActiveStatuses();
 
   return (
     <motion.div
@@ -72,10 +90,24 @@ function CombatantPortrait({
           className={`w-full h-full object-contain ${isEnemy ? 'scale-x-[-1]' : ''}`}
         />
 
-        {/* Status indicator */}
-        {status && (
-          <div className="absolute top-0 right-0 bg-black/70 rounded-bl px-0.5 text-xs">
-            {getStatusIcon()}
+        {/* Status indicators - show all active statuses */}
+        {activeStatuses.length > 0 && (
+          <div className="absolute top-0 right-0 flex flex-col items-end">
+            {activeStatuses.slice(0, 3).map((statusInfo, idx) => (
+              <div
+                key={statusInfo.name}
+                className="bg-black/80 rounded-bl px-0.5 text-[10px] leading-tight flex items-center"
+                style={{ marginTop: idx > 0 ? '-1px' : 0 }}
+                title={`${statusInfo.name} x${statusInfo.stacks}`}
+              >
+                <span>{statusInfo.icon}</span>
+                {statusInfo.stacks > 1 && (
+                  <span className="text-[8px] text-yellow-400 font-bold ml-0.5">
+                    {statusInfo.stacks}
+                  </span>
+                )}
+              </div>
+            ))}
           </div>
         )}
 

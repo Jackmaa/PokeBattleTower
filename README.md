@@ -4,13 +4,12 @@
   <img src="https://img.shields.io/badge/Pok%C3%A9API-powered-red?style=flat-square&logo=pokemon" alt="PokéAPI Badge" />
   <img src="https://img.shields.io/badge/frontend-react-blue?style=flat-square&logo=react" alt="React Badge" />
   <img src="https://img.shields.io/badge/state-recoil-purple?style=flat-square&logo=recoil" alt="Recoil Badge" />
-  <img src="https://img.shields.io/badge/backend-express-black?style=flat-square&logo=express" alt="Express Badge" />
-  <img src="https://img.shields.io/badge/database-mongodb-brightgreen?style=flat-square&logo=mongodb" alt="MongoDB Badge" />
+  <img src="https://img.shields.io/badge/storage-localStorage-orange?style=flat-square" alt="localStorage Badge" />
   <img src="https://img.shields.io/badge/deployment-localhost-lightgrey?style=flat-square" alt="Localhost Badge" />
 </p>
 
-A full-stack roguelike Pokémon game where players climb a battle tower, build a powerful team, and try to reach the highest floor before being knocked out!  
-Inspired by classic Pokémon mechanics and powered by modern web tech.
+A client-side roguelike Pokémon game where players climb a battle tower, build a powerful team, and try to reach the highest floor before being knocked out!
+Inspired by classic Pokémon mechanics and powered by modern web tech. All game data is stored locally in your browser.
 
 ---
 
@@ -23,7 +22,7 @@ Inspired by classic Pokémon mechanics and powered by modern web tech.
   - 🩹 Heal your team
   - 💪 Buff stats
 - ☠️ Lose all your Pokémon = Game over!
-- 🏆 Save your score and climb the leaderboard.
+- 🏆 Track your runs and compare your best performances.
 
 ---
 
@@ -31,31 +30,26 @@ Inspired by classic Pokémon mechanics and powered by modern web tech.
 
 | Layer      | Tech                           |
 | ---------- | ------------------------------ |
-| Frontend   | React + Recoil (or Redux)      |
+| Frontend   | React + Recoil                 |
 | Animations | Framer Motion                  |
-| Backend    | Node.js + Express              |
-| Database   | MongoDB                        |
+| Storage    | Browser localStorage           |
 | API        | [PokéAPI](https://pokeapi.co/) |
-| Tools      | Postman, MongoDB Compass       |
+| Build Tool | Vite                           |
 
 ---
 
 ## 📁 Project Structure
 
     pokemon-battle-tower/
-    ├── client/         # Frontend (Vite + React + Recoil)
-    │   └── src/
-    │       ├── components/
-    │       ├── pages/
-    │       ├── recoil/
-    │       ├── services/
-    │       ├── App.jsx
-    │       └── main.jsx
-    ├── server/         # Backend (Node + Express)
-    │   ├── models/
-    │   ├── routes/
-    │   ├── server.js
-    │   └── .env
+    └── client/         # Frontend (Vite + React + Recoil)
+        └── src/
+            ├── components/
+            ├── pages/
+            ├── recoil/
+            ├── services/
+            ├── utils/
+            ├── App.jsx
+            └── main.jsx
 
 ---
 
@@ -64,88 +58,49 @@ Inspired by classic Pokémon mechanics and powered by modern web tech.
 ### 🧩 Prerequisites
 
 - [Node.js](https://nodejs.org/)
-- [MongoDB](https://www.mongodb.com/try/download/community)
-- [PokéAPI](https://pokeapi.co/) – no API key required
+- A modern web browser with localStorage support
+
+### 🚀 Setup & Run
+
+1. Clone the repository
+2. Install dependencies and start the dev server:
+
+```bash
+cd client
+npm install
+npm run dev
+```
+
+3. Open your browser and navigate to:
+
+```
+http://localhost:5173/
+```
+
+### 💾 Data Storage
+
+All game data is stored locally in your browser using localStorage:
+- **Save Slots**: 3 manual save slots + 1 autosave
+- **Meta Progression**: Achievements, unlocked starters, permanent gold, relic collection
+- **Player Progression**: XP, levels, talent trees, trainer skills
+- **Run Statistics**: Personal leaderboard and run history
+
+Note: Clearing browser data will erase your progress. Use the in-game export feature to backup saves.
 
 ---
 
-### ⚙️ Backend Setup
+## ✨ Current Features
 
-Run the following in your terminal:
-
-    cd server
-    npm install
-    echo "MONGO_URI=mongodb://localhost:27017/battletower" > .env
-    node server.js
-
----
-
-### 🧪 Test the API
-
-Make sure your backend is running, then test:
-
-    curl http://localhost:5000/test
-
----
-
-### 💻 Frontend Setup
-
-In another terminal window:
-
-    cd client
-    npm install
-    npm run dev
-
-The app will be available at:
-
-    http://localhost:5173/
-
----
-
-## 📡 API Endpoints
-
-### `POST /api/runs`
-
-Saves a new run to the database.  
-Example payload:
-
-    {
-      "username": "Vraith",
-      "team": [
-        {
-          "name": "Charizard",
-          "level": 42,
-          "isShiny": false,
-          "stats": {
-            "hp": 120,
-            "attack": 80,
-            "defense": 70,
-            "speed": 100,
-            "special_attack": 95,
-            "special_defense": 85
-          }
-        }
-      ],
-      "floorReached": 12,
-      "rewardsChosen": ["Heal", "Catch New"]
-    }
-
----
-
-### `GET /api/runs`
-
-Returns all saved runs (sorted by latest first).
-
----
-
-## 🎯 Features To Come
-
-- 🧠 Smarter AI for enemy trainers
-- 🧬 Pokémon evolution mechanics
-- 🏆 Global leaderboard & Hall of Fame
-- 🎭 Randomized event floors
-- 🛒 Shop / item system
-- 👤 Player login & profile system
+- 🎲 Roguelike progression through randomized tower floors
+- ⚔️ Turn-based Pokémon battles with type effectiveness
+- 🧬 Evolution system with level-based evolutions
+- 🎭 Random event encounters (shops, trainers, choices)
+- 🏆 Meta-progression with achievements and unlockable starters
+- 🌳 Talent tree system with multiple branches
+- 🔮 Relic system with powerful passive effects
+- 📊 Personal run statistics and leaderboard
+- 💾 Multiple save slots with import/export functionality
+- 🎨 Polished UI with animations and visual effects
 
 ---
 

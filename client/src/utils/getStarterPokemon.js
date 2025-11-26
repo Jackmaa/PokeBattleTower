@@ -5,12 +5,17 @@ import { initializePokemonXP } from "./pokemonLeveling";
 
 // Starter Pokemon data with Pokedex IDs
 const STARTER_DATA = {
-  // Default starters
+  // Default starters (first stage evolutions)
+  charmander: { id: 4, name: 'Charmander', icon: '🔥' },
+  squirtle: { id: 7, name: 'Squirtle', icon: '💧' },
+  bulbasaur: { id: 1, name: 'Bulbasaur', icon: '🌿' },
+
+  // Unlockable starters (evolved forms)
   charizard: { id: 6, name: 'Charizard', icon: '🔥' },
   blastoise: { id: 9, name: 'Blastoise', icon: '💧' },
   venusaur: { id: 3, name: 'Venusaur', icon: '🌿' },
 
-  // Unlockable starters
+  // Other unlockable starters
   pikachu: { id: 25, name: 'Pikachu', icon: '⚡' },
   gengar: { id: 94, name: 'Gengar', icon: '👻' },
   dragonite: { id: 149, name: 'Dragonite', icon: '🐉' },
