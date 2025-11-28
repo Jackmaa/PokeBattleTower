@@ -3,9 +3,9 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Card } from './ui';
-import PokemonCard from './PokemonCard';
-import { getItemById } from '../utils/items';
+import { Card } from '../ui';
+import PokemonCard from '../PokemonCard';
+import { getItemById } from '../../utils/items';
 
 export default function EquipItemPanel({ team, inventory, onEquipItem, onUnequipItem, onClose }) {
   const [selectedPokemonIndex, setSelectedPokemonIndex] = useState(null);

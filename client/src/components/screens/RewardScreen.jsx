@@ -1,9 +1,9 @@
 import { motion } from "framer-motion";
-import { Card } from "./ui";
+import { Card } from "../ui";
 import { useState, useEffect, useMemo } from "react";
-import { generateRandomRewards, getTierConfig, REWARD_TIERS } from "../utils/rewards";
+import { generateRandomRewards, getTierConfig, REWARD_TIERS } from "../../utils/rewards";
 import { useRecoilValue } from "recoil";
-import { floorState } from "../recoil/atoms/floor";
+import { floorState } from "../../recoil/atoms/floor";
 
 export default function RewardScreen({ setPendingReward, onApplyReward }) {
   const [showConfetti, setShowConfetti] = useState(true);

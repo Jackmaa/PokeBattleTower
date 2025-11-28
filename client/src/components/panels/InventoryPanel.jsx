@@ -4,9 +4,9 @@
 import { useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import { motion, AnimatePresence } from 'framer-motion';
-import { inventoryState } from '../recoil/atoms/inventory';
-import { getItemById } from '../utils/items';
-import { Card } from './ui';
+import { inventoryState } from '../../recoil/atoms/inventory';
+import { getItemById } from '../../utils/items';
+import { Card } from '../ui';
 import RelicsPanel from './RelicsPanel';
 
 export default function InventoryPanel({ onUseItem, disabled = false }) {

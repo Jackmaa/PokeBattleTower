@@ -1,28 +1,28 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useResetRecoilState, useRecoilValue } from "recoil";
 import { motion, AnimatePresence } from "framer-motion";
-import { Button, Card } from "./ui";
+import { Button, Card } from "../ui";
 
-import { teamState } from "../recoil/atoms/team";
-import { floorState } from "../recoil/atoms/floor";
-import { battleState } from "../recoil/atoms/battle";
-import { gameStartedState, gameViewState } from "../recoil/atoms/game";
-import { activePokemonIndexState } from "../recoil/atoms/active";
-import { rewardState } from "../recoil/atoms/reward";
-import { highlightedStatState } from "../recoil/atoms/highlight";
-import { battleLogState } from "../recoil/atoms/battleLog";
-import { towerMapState, currentNodeState } from "../recoil/atoms/towerMap";
-import { enemyTeamState } from "../recoil/atoms/enemy";
-import { currencyState, inventoryState } from "../recoil/atoms/inventory";
-import { relicsState } from "../recoil/atoms/relics";
-import { saveRunStats } from "../utils/statsTracker";
-import { updateMetaProgressAfterRun } from "../utils/metaProgression";
+import { teamState } from "../../recoil/atoms/team";
+import { floorState } from "../../recoil/atoms/floor";
+import { battleState } from "../../recoil/atoms/battle";
+import { gameStartedState, gameViewState } from "../../recoil/atoms/game";
+import { activePokemonIndexState } from "../../recoil/atoms/active";
+import { rewardState } from "../../recoil/atoms/reward";
+import { highlightedStatState } from "../../recoil/atoms/highlight";
+import { battleLogState } from "../../recoil/atoms/battleLog";
+import { towerMapState, currentNodeState } from "../../recoil/atoms/towerMap";
+import { enemyTeamState } from "../../recoil/atoms/enemy";
+import { currencyState, inventoryState } from "../../recoil/atoms/inventory";
+import { relicsState } from "../../recoil/atoms/relics";
+import { saveRunStats } from "../../utils/statsTracker";
+import { updateMetaProgressAfterRun } from "../../utils/metaProgression";
 import {
   processRunCompletion,
   loadProgression,
   getPlayerTitle,
   getXPForLevel,
-} from "../utils/playerProgression";
+} from "../../utils/playerProgression";
 
 export default function GameOverScreen({ isVictory = false }) {
   // Get current values before reset for stats

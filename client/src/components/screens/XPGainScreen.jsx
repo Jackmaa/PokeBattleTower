@@ -3,8 +3,8 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Button, Card } from './ui';
-import { getXPToNextLevel } from '../utils/pokemonLeveling';
+import { Button, Card } from '../ui';
+import { getXPToNextLevel } from '../../utils/pokemonLeveling';
 
 // Stat name formatting
 const formatStatName = (stat) => {

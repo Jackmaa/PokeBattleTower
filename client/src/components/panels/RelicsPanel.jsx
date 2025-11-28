@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import { motion, AnimatePresence } from 'framer-motion';
-import { relicsState } from '../recoil/atoms/relics';
-import { getRelicTierColor, calculateRelicBonuses, RELIC_TIERS } from '../utils/relics';
+import { relicsState } from '../../recoil/atoms/relics';
+import { getRelicTierColor, calculateRelicBonuses, RELIC_TIERS } from '../../utils/relics';
 
 function RelicTooltip({ relic, position = 'top' }) {
   const tierColor = getRelicTierColor(relic.tier);
