@@ -11,6 +11,8 @@ import { MAX_SKILL_LEVEL, getSkillLevelBonus, levelUpSkill, getSkillLevelDisplay
 import { getPossibleFusions, performSpellFusion, FUSED_MOVES } from '../utils/spellFusion';
 import { useMoveDisplay } from '../hooks/ui/useMoveDisplay';
 import typeColors from '../utils/typeColors';
+import FullScreenModal from './modals/FullScreenModal';
+import { CompactMoveCard } from './cards';
 
 // Check if move is AOE
 const isAOEMove = (target) => {
@@ -231,20 +233,15 @@ export default function LevelUpChoiceModal({
   const canFuse = possibleFusions.length > 0;
 
   return (
-    <AnimatePresence>
-      <motion.div
-        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-      >
-        <motion.div
-          className="max-w-4xl w-full max-h-[90vh] overflow-auto"
-          initial={{ scale: 0.9, y: 50 }}
-          animate={{ scale: 1, y: 0 }}
-          exit={{ scale: 0.9, y: 50 }}
-        >
-          <Card className="p-6 border-2 border-yellow-500/50 bg-gradient-to-b from-gray-900 to-black">
+    <FullScreenModal
+      isOpen={true}
+      onClose={() => {}} // Level-up modal can't be closed
+      borderColor="yellow-500"
+      closeOnBackdrop={false}
+      showCloseButton={false}
+      maxWidth="4xl"
+    >
+      <Card className="border-none p-0 bg-gradient-to-b from-gray-900 to-black">
             {/* Header */}
             <div className="flex items-center gap-4 mb-6">
               <motion.img
@@ -488,9 +485,7 @@ export default function LevelUpChoiceModal({
                 Skip
               </Button>
             </div>
-          </Card>
-        </motion.div>
-      </motion.div>
-    </AnimatePresence>
+      </Card>
+    </FullScreenModal>
   );
 }

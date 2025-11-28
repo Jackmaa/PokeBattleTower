@@ -1,7 +1,7 @@
 // 📁 TypeEffectivenessIndicator.jsx
 // Shows type matchup effectiveness before attacking
 
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { getTypeEffectiveness } from "../utils/typeChart";
 import typeColors from "../utils/typeColors";
 

@@ -20,4 +20,8 @@ const typeColors = {
   steel: "#b8b8d0",
 };
 
+// Named export for direct access
+export const TYPE_COLORS = typeColors;
+
+// Default export for convenience
 export default typeColors;

@@ -9,6 +9,7 @@ import {
   getPlayerTitle,
 } from '../utils/playerProgression';
 import { getStarterInfo } from '../utils/getStarterPokemon';
+import typeColors from '../utils/typeColors';
 
 // Extended starter data with Pokedex IDs for new starters
 const EXTENDED_STARTERS = {
@@ -24,23 +25,6 @@ const EXTENDED_STARTERS = {
   lucario: { id: 448, name: 'Lucario', icon: '🥊', types: ['fighting', 'steel'] },
   salamence: { id: 373, name: 'Salamence', icon: '🐲', types: ['dragon', 'flying'] },
   mewtwo: { id: 150, name: 'Mewtwo', icon: '🧬', types: ['psychic'] },
-};
-
-const TYPE_COLORS = {
-  fire: '#ef4444',
-  water: '#3b82f6',
-  grass: '#22c55e',
-  electric: '#eab308',
-  ghost: '#8b5cf6',
-  poison: '#a855f7',
-  dragon: '#6366f1',
-  flying: '#93c5fd',
-  rock: '#a8a29e',
-  dark: '#1f2937',
-  steel: '#94a3b8',
-  psychic: '#ec4899',
-  fighting: '#dc2626',
-  ground: '#ca8a04',
 };
 
 function StarterCard({ starterId, shopConfig, starterInfo, isOwned, progression, onBuy, sprite }) {
@@ -85,7 +69,7 @@ function StarterCard({ starterId, shopConfig, starterInfo, isOwned, progression,
       <div
         className="h-32 flex items-center justify-center relative"
         style={{
-          background: `linear-gradient(135deg, ${TYPE_COLORS[types[0]] || '#374151'}33, ${TYPE_COLORS[types[1] || types[0]] || '#374151'}33)`
+          background: `linear-gradient(135deg, ${typeColors[types[0]] || '#374151'}33, ${typeColors[types[1] || types[0]] || '#374151'}33)`
         }}
       >
         {sprite ? (
@@ -105,7 +89,7 @@ function StarterCard({ starterId, shopConfig, starterInfo, isOwned, progression,
             <span
               key={type}
               className="text-xs px-2 py-0.5 rounded-full text-white capitalize"
-              style={{ backgroundColor: TYPE_COLORS[type] || '#6b7280' }}
+              style={{ backgroundColor: typeColors[type] || '#6b7280' }}
             >
               {type}
             </span>

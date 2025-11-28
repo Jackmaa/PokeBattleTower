@@ -53,25 +53,25 @@ import { getWeatherForContext, WEATHER_TYPES } from "../utils/vfxManager";
 
 import { getRandomPokemon } from "../utils/getRandomPokemon";
 import { calculateCaptureLevel } from "../utils/rewards";
-import RewardScreen from "../components/RewardScreen";
-import GameOverScreen from "../components/GameOverScreen";
-import XPGainScreen from "../components/XPGainScreen";
+import { RewardScreen, GameOverScreen, XPGainScreen } from "../components/screens";
+import { InventoryPanel, RelicsPanel, EquipItemPanel } from "../components/panels";
 import AudioControls from "../components/AudioControls";
 import MoveSelector from "../components/MoveSelector";
 import SkillSelector from "../components/SkillSelector";
 import TurnOrderDisplay from "../components/TurnOrderDisplay";
 import TargetSelector from "../components/TargetSelector";
-import InventoryPanel from "../components/InventoryPanel";
-import RelicsPanel from "../components/RelicsPanel";
 import MoveLearningModal from "../components/MoveLearningModal";
 import BattleMenu from "../components/BattleMenu";
 import EvolutionModal from "../components/EvolutionModal";
 import LevelUpChoiceModal from "../components/LevelUpChoiceModal";
-import EquipItemPanel from "../components/EquipItemPanel";
 import TypeEffectivenessIndicator from "../components/TypeEffectivenessIndicator";
 import TrainerSkillsBar from "../components/TrainerSkillsBar";
 import { useAudio } from "../hooks/useAudio";
 import { discoverRelic } from "../utils/metaProgression";
+
+// Custom hooks
+import { useBattleState, useBattleEffects } from "../hooks/battle";
+import { useEvolutionManager, useLevelUpManager, useXPManager } from "../hooks/progression";
 
 export default function FloorScreen({ onFloorComplete }) {
   const [newMon, setNewMon] = useState(null);
@@ -91,14 +91,8 @@ export default function FloorScreen({ onFloorComplete }) {
   const [relics, setRelics] = useRecoilState(relicsState);
   const [pendingReward, setPendingReward] = useState(null);
   const [rewardApplied, setRewardApplied] = useState(false);
-  const [xpGainResult, setXpGainResult] = useState(null); // Store XP result to show XP screen before rewards
-  const [teamBeforeXP, setTeamBeforeXP] = useState(null); // Store team state before XP for comparison
-  const [pendingMoveLearn, setPendingMoveLearn] = useState(null); // { pokemon, newMove, pokemonIndex }
-  const [moveLearningQueue, setMoveLearningQueue] = useState([]); // Queue of pending move learns
-  const [pendingEvolution, setPendingEvolution] = useState(null); // { pokemonIndex, pokemon, evolution }
-  const [evolutionQueue, setEvolutionQueue] = useState([]); // Queue of pending evolutions
-  const [pendingLevelUpChoice, setPendingLevelUpChoice] = useState(null); // { pokemonIndex, pokemon, newMove, possibleFusions, upgradableMoves }
-  const [levelUpChoiceQueue, setLevelUpChoiceQueue] = useState([]); // Queue of pending level up choices
+  const [xpGainResult, setXpGainResult] = useState(null);
+  const [teamBeforeXP, setTeamBeforeXP] = useState(null);
   const [isSwitching, setIsSwitching] = useState(false);
   const [isBattleInProgress, setIsBattleInProgress] = useState(false);
   const [showInventory, setShowInventory] = useState(false);
@@ -106,39 +100,112 @@ export default function FloorScreen({ onFloorComplete }) {
   const [selectedItem, setSelectedItem] = useState(null);
   const [hasMegaEvolved, setHasMegaEvolved] = useState(false);
   const [progression, setProgression] = useState(loadProgression());
-  
-  // Trainer Skills State
-  const [skillCooldowns, setSkillCooldowns] = useState({}); // { skillId: turnsRemaining }
-  const [activeSkillEffects, setActiveSkillEffects] = useState({}); // { skillId: { ...effect, duration } }
 
-  // NvM Battle State
-  const [nvmBattle, setNvmBattle] = useState(null); // BattleState instance
-  const [turnOrderDisplay, setTurnOrderDisplay] = useState([]); // For UI
-  const [currentTurnIndex, setCurrentTurnIndex] = useState(0);
-  const [roundNumber, setRoundNumber] = useState(1);
-  const [awaitingPlayerMove, setAwaitingPlayerMove] = useState(false);
-  const [currentCombatantId, setCurrentCombatantId] = useState(null);
+  // Trainer Skills State
+  const [skillCooldowns, setSkillCooldowns] = useState({});
+  const [activeSkillEffects, setActiveSkillEffects] = useState({});
+
+  // NvM Battle State - using custom hook
+  const battleState = useBattleState();
+  const {
+    nvmBattle,
+    turnOrderDisplay,
+    currentTurnIndex,
+    roundNumber,
+    awaitingPlayerMove,
+    currentCombatantId,
+    battleStateRef,
+    initializeBattle,
+    updateBattleDisplay,
+    resetBattle,
+    getCurrentCombatant,
+    isBattleFinished,
+    getBattleWinner,
+    setAwaitingPlayerMove,
+    setCurrentCombatantId,
+    setNvmBattle,
+  } = battleState;
+
+  // Additional NvM UI state (not in hook)
   const [selectedMove, setSelectedMove] = useState(null);
   const [showTargetSelector, setShowTargetSelector] = useState(false);
   const [selectedTargetId, setSelectedTargetId] = useState(null);
-  const [enemyTargeting, setEnemyTargeting] = useState({}); // { enemyId: targetPlayerId }
-  const [battleMenuState, setBattleMenuState] = useState(null); // 'main' | 'moves' | 'items' | 'pokemon' | null
-  const [targetingMode, setTargetingMode] = useState(false); // When true, Pokemon cards are clickable for targeting
-  const battleStateRef = useRef(null); // For accessing battle state in async functions
-  const handleBattleEndRef = useRef(null); // Ref to avoid circular dependency
-  const lastSetupNodeIdRef = useRef(null); // Track which node we've already setup to prevent double generation
+  const [enemyTargeting, setEnemyTargeting] = useState({});
+  const [battleMenuState, setBattleMenuState] = useState(null);
+  const [targetingMode, setTargetingMode] = useState(false);
+  const handleBattleEndRef = useRef(null);
+  const lastSetupNodeIdRef = useRef(null);
 
-  // Battle effects state
-  const [currentAttack, setCurrentAttack] = useState(null);
-  const [damageDisplay, setDamageDisplay] = useState(null);
-  const [screenShakeTrigger, setScreenShakeTrigger] = useState({ active: false, damage: 0 });
-  const [attackingPokemon, setAttackingPokemon] = useState(null);
+  // Battle effects - using custom hook
+  const battleEffects = useBattleEffects();
+  const {
+    currentAttack,
+    damageDisplay,
+    screenShakeTrigger,
+    attackingPokemon,
+    currentWeather,
+    attackVFX,
+    setCurrentAttack,
+    setDamageDisplay,
+    setAttackingPokemon,
+    setCurrentWeather,
+    setAttackVFX,
+    resetEffects,
+    triggerScreenShake,
+    showDamage,
+    triggerAttackVFX,
+  } = battleEffects;
+
   const [showMoveModal, setShowMoveModal] = useState(false);
-
-  // VFX state
-  const [currentWeather, setCurrentWeather] = useState('none');
-  const [attackVFX, setAttackVFX] = useState({ active: false, type: 'normal', targetX: 0, targetY: 0 });
   const cameraRef = React.useRef(null);
+
+  // Evolution Manager - using custom hook
+  const evolutionManager = useEvolutionManager();
+  const {
+    pendingEvolution,
+    evolutionQueue,
+    showEvolutionModal,
+    queueEvolution,
+    processNextEvolution,
+    completeEvolution,
+    cancelEvolution,
+    setPendingEvolution,
+    setEvolutionQueue,
+    setShowEvolutionModal,
+  } = evolutionManager;
+
+  // Level Up Manager - using custom hook
+  const levelUpManager = useLevelUpManager();
+  const {
+    levelUpChoice: pendingLevelUpChoice,
+    pendingMoveLearn,
+    showLevelUpModal,
+    showMoveLearnModal,
+    triggerLevelUpChoice,
+    completeLevelUpChoice,
+    triggerMoveLearn,
+    completeMoveLearn,
+    cancelMoveLearn,
+    setLevelUpChoice: setPendingLevelUpChoice,
+    setPendingMoveLearn,
+    setShowLevelUpModal,
+    setShowMoveLearnModal,
+  } = levelUpManager;
+
+  // Legacy queues (keep for now, can migrate later)
+  const [moveLearningQueue, setMoveLearningQueue] = useState([]);
+  const [levelUpChoiceQueue, setLevelUpChoiceQueue] = useState([]);
+
+  // XP Manager - using custom hook
+  const xpManager = useXPManager();
+  const {
+    isDistributingXP,
+    currentXPDistribution,
+    startXPDistribution,
+    completeXPDistribution,
+    calculateXPDistribution,
+    applyXPToPokemon,
+  } = xpManager;
 
   // Audio hook
   const {
@@ -219,14 +286,7 @@ export default function FloorScreen({ onFloorComplete }) {
         setAwaitingPlayerMove(true);
         // Initialize NvM Battle State with pre-generated enemies
         if (team.length > 0 && currentNode.enemies.length > 0) {
-          const battleInstance = new BattleState(team, currentNode.enemies);
-          setNvmBattle(battleInstance);
-          battleStateRef.current = battleInstance;
-
-          const summary = battleInstance.getSummary();
-          setTurnOrderDisplay(summary.turnOrder);
-          setCurrentTurnIndex(summary.currentTurnIndex);
-          setRoundNumber(summary.roundNumber);
+          const battleInstance = initializeBattle(team, currentNode.enemies);
 
           const targeting = {};
           for (const combatant of battleInstance.getEnemyCombatants()) {
@@ -261,15 +321,7 @@ export default function FloorScreen({ onFloorComplete }) {
 
         // Initialize NvM Battle State
         if (team.length > 0 && enemies.length > 0) {
-          const battleInstance = new BattleState(team, enemies);
-          setNvmBattle(battleInstance);
-          battleStateRef.current = battleInstance;
-
-          // Update turn order display
-          const summary = battleInstance.getSummary();
-          setTurnOrderDisplay(summary.turnOrder);
-          setCurrentTurnIndex(summary.currentTurnIndex);
-          setRoundNumber(summary.roundNumber);
+          const battleInstance = initializeBattle(team, enemies);
 
           // Calculate initial enemy targeting for display
           const targeting = {};
@@ -657,15 +709,14 @@ export default function FloorScreen({ onFloorComplete }) {
   // ============================================
 
   /**
-   * Update the UI display from battle state
+   * Update the UI display and team state from battle instance
+   * Extended version that syncs Recoil state
    */
-  const updateBattleDisplay = useCallback((battleInstance) => {
+  const syncBattleState = useCallback((battleInstance) => {
     if (!battleInstance) return;
 
-    const summary = battleInstance.getSummary();
-    setTurnOrderDisplay(summary.turnOrder);
-    setCurrentTurnIndex(summary.currentTurnIndex);
-    setRoundNumber(summary.roundNumber);
+    // Update battle display via hook
+    updateBattleDisplay();
 
     // Sync active index with current combatant if it's a player
     // This fixes the bug where UI doesn't switch when a Pokemon faints
@@ -1036,7 +1087,7 @@ export default function FloorScreen({ onFloorComplete }) {
     // Process next turn
     await new Promise(resolve => setTimeout(resolve, 300));
     processNextTurn(battleInstance);
-  }, [floor, executeAttack, updateBattleDisplay]);
+  }, [floor, executeAttack, syncBattleState]);
 
   /**
    * Process player turn (after target selection)
@@ -1118,7 +1169,7 @@ export default function FloorScreen({ onFloorComplete }) {
     // Process next turn
     await new Promise(resolve => setTimeout(resolve, 300));
     processNextTurn(battleInstance);
-  }, [executeAttack, updateBattleDisplay]);
+  }, [executeAttack, syncBattleState]);
 
   /**
    * Process the next turn in sequence
@@ -1171,7 +1222,7 @@ export default function FloorScreen({ onFloorComplete }) {
       
       setBattleLog(prev => [...prev, `🎮 ${currentCombatant.pokemon.name}'s turn!`]);
     }
-  }, [processEnemyTurn, updateBattleDisplay]);
+  }, [processEnemyTurn, syncBattleState]);
 
   /**
    * Handle battle end (win/lose)
@@ -2027,7 +2078,7 @@ export default function FloorScreen({ onFloorComplete }) {
       });
     } else {
       // Skip if failed to fetch
-      processNextEvolution();
+      handleNextEvolution();
     }
   };
 
@@ -2053,22 +2104,15 @@ export default function FloorScreen({ onFloorComplete }) {
   };
 
   /**
-   * Process next evolution in queue
+   * Process next evolution in queue (local handler)
    */
-  const processNextEvolution = () => {
+  const handleNextEvolution = () => {
     setPendingEvolution(null);
 
     if (evolutionQueue.length > 0) {
       const next = evolutionQueue[0];
       setEvolutionQueue(prev => prev.slice(1));
       prepareEvolution(next);
-    } else {
-      // All done, proceed to rewards
-      // Check if rewards are already applied to avoid duplicates
-      // if (!rewardApplied) {
-      //   // Only show reward screen if we have a reward to show
-      //   // Otherwise battle end logic handles it
-      // }
     }
   };
 
@@ -2950,9 +2994,9 @@ export default function FloorScreen({ onFloorComplete }) {
         )}
       </AnimatePresence>
 
-      {/* Move Learning Modal - Shows after XP screen if pokemon want to learn moves (legacy) */}
+      {/* Move Learning Modal - Shows after XP screen if pokemon want to learn moves */}
       <MoveLearningModal
-        isOpen={!!pendingMoveLearn}
+        isOpen={showMoveLearnModal}
         onClose={handleDeclineMoveLearn}
         pokemon={pendingMoveLearn?.pokemon}
         newMove={pendingMoveLearn?.newMove}
@@ -2963,7 +3007,7 @@ export default function FloorScreen({ onFloorComplete }) {
 
       {/* Level Up Choice Modal - Shows after XP screen for learn/upgrade/fuse options */}
       <LevelUpChoiceModal
-        isOpen={!!pendingLevelUpChoice}
+        isOpen={showLevelUpModal}
         onClose={handleLevelUpSkip}
         pokemon={pendingLevelUpChoice?.pokemon}
         newMove={pendingLevelUpChoice?.newMove}
@@ -2976,7 +3020,7 @@ export default function FloorScreen({ onFloorComplete }) {
       {/* Reward Screen - Shows after XP screen and move learning */}
       <AnimatePresence>
         {/* Evolution Modal */}
-        {pendingEvolution && (
+        {showEvolutionModal && pendingEvolution && (
           <EvolutionModal
             oldPokemon={pendingEvolution.pokemon}
             newPokemon={pendingEvolution.newPokemon}

@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import { teamState } from '../recoil/atoms/team';
 import { inventoryState } from '../recoil/atoms/inventory';
 import { Button } from '../components/ui';
-import EquipItemPanel from '../components/EquipItemPanel';
+import { EquipItemPanel } from '../components/panels';
 
 export default function EquipScreen({ onComplete }) {
   const [team, setTeam] = useRecoilState(teamState);

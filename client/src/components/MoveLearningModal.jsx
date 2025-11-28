@@ -4,113 +4,9 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card, Button } from "./ui";
-import { useMoveDisplay } from "../hooks/ui/useMoveDisplay";
+import FullScreenModal from "./modals/FullScreenModal";
+import { SelectableMoveCard } from "./cards";
 
-function MoveCard({ move, isSelected, onSelect, isNewMove = false }) {
-  const { typeColor, badges, styles, isAOE } = useMoveDisplay(move, {
-    showEnhancedInfo: true,
-    showSkillLevel: true,
-    showFused: true,
-    showPP: false,
-  });
-
-  return (
-    <motion.div
-      onClick={onSelect}
-      className={`relative p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
-        isSelected ? "ring-2 ring-gaming-accent ring-offset-2 ring-offset-black" : ""
-      }`}
-      style={{
-        borderColor: isSelected ? "#3b82f6" : typeColor,
-        backgroundColor: `${typeColor}20`,
-      }}
-      whileHover={{ scale: 1.02, y: -2 }}
-      whileTap={{ scale: 0.98 }}
-    >
-      {/* New Move Badge */}
-      {isNewMove && (
-        <motion.div
-          className="absolute -top-3 -right-3 bg-green-500 text-white px-2 py-1 rounded-full text-xs font-bold shadow-lg"
-          initial={{ scale: 0, rotate: -20 }}
-          animate={{ scale: 1, rotate: 0 }}
-          transition={{ type: "spring", stiffness: 300 }}
-        >
-          NEW!
-        </motion.div>
-      )}
-
-      {/* Move Name */}
-      <div className="mb-2">
-        <h4 className="font-bold text-lg" style={{ color: typeColor }}>
-          {move.name}
-        </h4>
-        <div className="flex items-center gap-2 mt-1">
-          <span
-            className="text-xs px-2 py-0.5 rounded-full font-semibold uppercase"
-            style={{ backgroundColor: typeColor, color: "#fff" }}
-          >
-            {move.type}
-          </span>
-          <span className="text-xs text-white/70 capitalize">
-            {move.category}
-          </span>
-          {move.priority > 0 && (
-            <span className="text-xs px-1.5 py-0.5 bg-yellow-500/30 border border-yellow-400/50 text-yellow-300 rounded font-bold">
-              +{move.priority} Priority
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* Effect Badges - Using useMoveDisplay hook */}
-      <div className="flex items-center gap-1.5 mb-2 flex-wrap">
-        {badges.map((badge, index) => (
-          <span
-            key={`${badge.type}-${index}`}
-            className="px-1.5 py-0.5 text-[10px] font-bold rounded border"
-            style={{
-              backgroundColor: badge.color,
-              borderColor: badge.border,
-              color: badge.text,
-            }}
-          >
-            {badge.label}
-            {badge.type === 'effect' && move.effect?.percent && ` ${move.effect.percent}%`}
-            {badge.type === 'status' && ` ${move.effect?.chance || 100}%`}
-          </span>
-        ))}
-      </div>
-
-      {/* Move Stats */}
-      <div className="flex gap-3 text-sm">
-        <span className="text-white/80">
-          💥 <span className="font-bold">{move.power || '-'}</span>
-        </span>
-        <span className="text-white/80">
-          🎯 <span className="font-bold">{move.accuracy}%</span>
-        </span>
-        <span className="text-white/80">
-          PP: <span className="font-bold">{move.maxPP}</span>
-        </span>
-      </div>
-
-      {/* Description */}
-      <p className="text-xs text-white/60 mt-2 line-clamp-2">
-        {move.description}
-      </p>
-
-      {/* Selection indicator */}
-      {isSelected && (
-        <motion.div
-          className="absolute inset-0 rounded-lg border-2 border-gaming-accent pointer-events-none"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          layoutId="moveSelection"
-        />
-      )}
-    </motion.div>
-  );
-}
 
 export default function MoveLearningModal({
   isOpen,
@@ -146,20 +42,15 @@ export default function MoveLearningModal({
     : "Choose a move to teach your Pokemon!";
 
   return (
-    <AnimatePresence>
-      <motion.div
-        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-      >
-        <motion.div
-          className="max-w-4xl w-full max-h-[90vh] overflow-auto"
-          initial={{ scale: 0.9, y: 50 }}
-          animate={{ scale: 1, y: 0 }}
-          exit={{ scale: 0.9, y: 50 }}
-        >
-          <Card className="p-6 border-2 border-gaming-accent">
+    <FullScreenModal
+      isOpen={true}
+      onClose={() => {}} // Move learning can't be dismissed
+      borderColor="purple-500"
+      closeOnBackdrop={false}
+      showCloseButton={false}
+      maxWidth="4xl"
+    >
+      <Card className="border-none p-0">
             {/* Header */}
             <div className="flex items-center gap-4 mb-6">
               <img
@@ -182,7 +73,7 @@ export default function MoveLearningModal({
               <h3 className="text-lg font-bold text-green-400 mb-3">
                 New Move to Learn:
               </h3>
-              <MoveCard move={newMove} isSelected={false} onSelect={() => {}} isNewMove />
+              <SelectableMoveCard move={newMove} isSelected={false} onSelect={() => {}} isNewMove />
             </div>
 
             {/* Current Moves */}
@@ -193,7 +84,7 @@ export default function MoveLearningModal({
               <div className="grid grid-cols-2 gap-3">
                 {/* Render existing moves */}
                 {pokemon.moves.map((move, index) => (
-                  <MoveCard
+                  <SelectableMoveCard
                     key={move.id || index}
                     move={move}
                     isSelected={selectedMoveIndex === index}
@@ -280,9 +171,7 @@ export default function MoveLearningModal({
                 Don't Learn
               </Button>
             </div>
-          </Card>
-        </motion.div>
-      </motion.div>
-    </AnimatePresence>
+      </Card>
+    </FullScreenModal>
   );
 }

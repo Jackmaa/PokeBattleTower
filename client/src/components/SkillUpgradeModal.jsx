@@ -11,28 +11,8 @@ import {
   getSkillLevelColor,
   levelUpSkill,
 } from '../utils/moves';
-
-// Type colors for move display
-const TYPE_COLORS = {
-  normal: '#A8A878',
-  fire: '#F08030',
-  water: '#6890F0',
-  grass: '#78C850',
-  electric: '#F8D030',
-  ice: '#98D8D8',
-  fighting: '#C03028',
-  poison: '#A040A0',
-  ground: '#E0C068',
-  flying: '#A890F0',
-  psychic: '#F85888',
-  bug: '#A8B820',
-  rock: '#B8A038',
-  ghost: '#705898',
-  dragon: '#7038F8',
-  dark: '#705848',
-  steel: '#B8B8D0',
-  fairy: '#EE99AC',
-};
+import typeColors from '../utils/typeColors';
+import FullScreenModal from './modals/FullScreenModal';
 
 /**
  * Single move upgrade card
@@ -42,7 +22,7 @@ function MoveUpgradeCard({ move, moveIndex, onUpgrade, disabled }) {
   const isMaxLevel = level >= MAX_SKILL_LEVEL;
   const nextBonus = getSkillLevelBonus(level + 1);
   const currentBonus = getSkillLevelBonus(level);
-  const color = getSkillLevelColor(level) || TYPE_COLORS[move.type] || '#888';
+  const color = getSkillLevelColor(level) || typeColors[move.type] || '#888';
   const nextColor = getSkillLevelColor(level + 1);
 
   return (
@@ -61,7 +41,7 @@ function MoveUpgradeCard({ move, moveIndex, onUpgrade, disabled }) {
         <div className="flex items-center gap-2">
           <div
             className="px-2 py-0.5 rounded text-xs font-bold uppercase"
-            style={{ backgroundColor: TYPE_COLORS[move.type] || '#888', color: 'white' }}
+            style={{ backgroundColor: typeColors[move.type] || '#888', color: 'white' }}
           >
             {move.type}
           </div>
@@ -218,29 +198,15 @@ export default function SkillUpgradeModal({
   const remainingUpgrades = availableUpgrades - upgradesUsed;
 
   return (
-    <AnimatePresence>
-      <motion.div
-        className="fixed inset-0 z-50 flex items-center justify-center p-4"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-      >
-        {/* Backdrop */}
-        <motion.div
-          className="absolute inset-0 bg-black/80 backdrop-blur-sm"
-          onClick={onClose}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-        />
-
-        {/* Modal Content */}
-        <motion.div
-          className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto"
-          initial={{ scale: 0.9, y: 20 }}
-          animate={{ scale: 1, y: 0 }}
-          exit={{ scale: 0.9, y: 20 }}
-        >
-          <Card className="p-6 bg-gradient-to-b from-gray-900 to-black border-2 border-purple-500/30 rounded-2xl">
+    <FullScreenModal
+      isOpen={isOpen}
+      onClose={onClose}
+      borderColor="purple-500"
+      closeOnBackdrop={true}
+      showCloseButton={false}
+      maxWidth="2xl"
+    >
+      <Card className="border-none p-0 bg-gradient-to-b from-gray-900 to-black rounded-2xl">
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
               <div>
@@ -272,7 +238,7 @@ export default function SkillUpgradeModal({
                     <span
                       key={type}
                       className="px-2 py-0.5 rounded text-xs font-bold uppercase"
-                      style={{ backgroundColor: TYPE_COLORS[type] || '#888', color: 'white' }}
+                      style={{ backgroundColor: typeColors[type] || '#888', color: 'white' }}
                     >
                       {type}
                     </span>
@@ -309,10 +275,8 @@ export default function SkillUpgradeModal({
                 {remainingUpgrades > 0 ? 'Done' : 'Close'}
               </Button>
             </div>
-          </Card>
-        </motion.div>
-      </motion.div>
-    </AnimatePresence>
+      </Card>
+    </FullScreenModal>
   );
 }
 

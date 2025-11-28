@@ -9,7 +9,7 @@ import { settingsState, showSettingsMenuState } from '../recoil/atoms/settings';
 import AudioControls from './AudioControls';
 import { clearAllSaves, getSaveSystemStats } from '../utils/saveManager';
 import { useAudio } from '../hooks/useAudio';
-import { THEMES as THEME_DATA, applyTheme, getAvailableThemes } from '../utils/themeManager';
+import { applyTheme, getAvailableThemes } from '../utils/themeManager';
 
 // Get themes from theme manager for display
 const THEMES = getAvailableThemes().map(theme => ({

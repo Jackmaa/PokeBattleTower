@@ -10,76 +10,17 @@ import {
   FUSED_MOVES,
 } from '../utils/spellFusion';
 import { TARGET_TYPES, getRandomLearnableMove } from '../utils/moves';
-
-// Type colors
-const TYPE_COLORS = {
-  normal: '#A8A878',
-  fire: '#F08030',
-  water: '#6890F0',
-  grass: '#78C850',
-  electric: '#F8D030',
-  ice: '#98D8D8',
-  fighting: '#C03028',
-  poison: '#A040A0',
-  ground: '#E0C068',
-  flying: '#A890F0',
-  psychic: '#F85888',
-  bug: '#A8B820',
-  rock: '#B8A038',
-  ghost: '#705898',
-  dragon: '#7038F8',
-  dark: '#705848',
-  steel: '#B8B8D0',
-  fairy: '#EE99AC',
-};
-
-/**
- * Move card for selection
- */
-function MoveCard({ move, isSelected, onClick, disabled }) {
-  const color = TYPE_COLORS[move.type] || '#888';
-
-  return (
-    <motion.button
-      className={`w-full p-3 rounded-lg text-left transition-all ${
-        disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'
-      } ${
-        isSelected
-          ? 'ring-2 ring-purple-500 bg-purple-500/20'
-          : 'bg-white/5 hover:bg-white/10'
-      }`}
-      onClick={disabled ? undefined : onClick}
-      whileHover={!disabled ? { scale: 1.02 } : {}}
-      whileTap={!disabled ? { scale: 0.98 } : {}}
-    >
-      <div className="flex items-center gap-2 mb-1">
-        <div
-          className="px-2 py-0.5 rounded text-xs font-bold uppercase"
-          style={{ backgroundColor: color, color: 'white' }}
-        >
-          {move.type}
-        </div>
-        <span className="font-bold text-white">{move.name}</span>
-        {move.isFused && (
-          <span className="text-xs px-1.5 py-0.5 bg-purple-500/30 text-purple-300 rounded">
-            FUSED
-          </span>
-        )}
-      </div>
-      <div className="text-xs text-white/50">
-        Power: {move.power || '-'} | Acc: {move.accuracy}% | {move.category}
-      </div>
-    </motion.button>
-  );
-}
+import typeColors from '../utils/typeColors';
+import FullScreenModal from './modals/FullScreenModal';
+import { CompactMoveCard } from './cards';
 
 /**
  * Fusion result preview
  */
 function FusionPreview({ move1, move2, resultMove }) {
-  const color1 = TYPE_COLORS[move1.type] || '#888';
-  const color2 = TYPE_COLORS[move2.type] || '#888';
-  const resultColor = TYPE_COLORS[resultMove.type] || '#888';
+  const color1 = typeColors[move1.type] || '#888';
+  const color2 = typeColors[move2.type] || '#888';
+  const resultColor = typeColors[resultMove.type] || '#888';
 
   return (
     <motion.div
@@ -121,7 +62,7 @@ function FusionPreview({ move1, move2, resultMove }) {
           {resultMove.secondaryType && (
             <div
               className="px-2 py-1 rounded text-sm font-bold uppercase"
-              style={{ backgroundColor: TYPE_COLORS[resultMove.secondaryType] || '#888', color: 'white' }}
+              style={{ backgroundColor: typeColors[resultMove.secondaryType] || '#888', color: 'white' }}
             >
               {resultMove.secondaryType}
             </div>
@@ -293,27 +234,15 @@ export default function SpellFusionModal({
   if (!isOpen || !pokemon) return null;
 
   return (
-    <AnimatePresence>
-      <motion.div
-        className="fixed inset-0 z-50 flex items-center justify-center p-4"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-      >
-        {/* Backdrop */}
-        <motion.div
-          className="absolute inset-0 bg-black/80 backdrop-blur-sm"
-          onClick={handleClose}
-        />
-
-        {/* Modal */}
-        <motion.div
-          className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto"
-          initial={{ scale: 0.9, y: 20 }}
-          animate={{ scale: 1, y: 0 }}
-          exit={{ scale: 0.9, y: 20 }}
-        >
-          <Card className="p-6 bg-gradient-to-b from-gray-900 to-black border-2 border-purple-500/30 rounded-2xl">
+    <FullScreenModal
+      isOpen={true}
+      onClose={handleClose}
+      borderColor="purple-500"
+      closeOnBackdrop={true}
+      showCloseButton={false}
+      maxWidth="3xl"
+    >
+      <Card className="border-none p-0 bg-gradient-to-b from-gray-900 to-black rounded-2xl">
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
               <div>
@@ -387,7 +316,7 @@ export default function SpellFusionModal({
                         <span 
                           className="text-xs px-2 py-0.5 rounded uppercase font-bold"
                           style={{ 
-                            backgroundColor: TYPE_COLORS[bonusMove.type] || '#888',
+                            backgroundColor: typeColors[bonusMove.type] || '#888',
                             color: 'white'
                           }}
                         >
@@ -441,7 +370,7 @@ export default function SpellFusionModal({
                 {/* Moves Selection */}
                 <div className="grid grid-cols-2 gap-3 mb-6">
                   {pokemon.moves?.map((move, index) => (
-                    <MoveCard
+                    <CompactMoveCard
                       key={move.id || index}
                       move={move}
                       isSelected={selectedMoves.includes(index)}
@@ -507,9 +436,7 @@ export default function SpellFusionModal({
                 </div>
               </>
             )}
-          </Card>
-        </motion.div>
-      </motion.div>
-    </AnimatePresence>
+      </Card>
+    </FullScreenModal>
   );
 }

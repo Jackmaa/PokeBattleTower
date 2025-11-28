@@ -1,10 +1,10 @@
 // 📁 AudioControls.jsx
 // Audio settings component with volume sliders and toggles
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAudio } from '../hooks/useAudio';
-import { Card, Button } from './ui';
+import { Card } from './ui';
 
 export default function AudioControls() {
   const [isOpen, setIsOpen] = useState(false);

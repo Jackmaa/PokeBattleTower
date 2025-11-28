@@ -31,6 +31,7 @@ import {
   getTalentEffect,
   getAllTalentEffects,
 } from "../utils/playerProgression";
+import typeColors from "../utils/typeColors";
 
 export default function StarterScreen({ onStart }) {
   const setTeam = useSetRecoilState(teamState);
@@ -435,7 +436,7 @@ export default function StarterScreen({ onStart }) {
                                   <span
                                     key={type}
                                     className="px-4 py-1 rounded text-sm font-bold text-white capitalize tracking-wider border border-white/20 shadow-lg"
-                                    style={{ backgroundColor: getTypeColor(type) }}
+                                    style={{ backgroundColor: typeColors[type] || '#888888' }}
                                   >
                                     {type}
                                   </span>
@@ -603,16 +604,4 @@ export default function StarterScreen({ onStart }) {
       </AnimatePresence>
     </div>
   );
-}
-
-// Helper function for type colors
-function getTypeColor(type) {
-  const colors = {
-    normal: '#A8A878', fire: '#F08030', water: '#6890F0', electric: '#F8D030',
-    grass: '#78C850', ice: '#98D8D8', fighting: '#C03028', poison: '#A040A0',
-    ground: '#E0C068', flying: '#A890F0', psychic: '#F85888', bug: '#A8B820',
-    rock: '#B8A038', ghost: '#705898', dragon: '#7038F8', dark: '#705848',
-    steel: '#B8B8D0', fairy: '#EE99AC'
-  };
-  return colors[type] || '#888888';
 }

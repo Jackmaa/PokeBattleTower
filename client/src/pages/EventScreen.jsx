@@ -1,25 +1,19 @@
 // 📁 EventScreen.jsx
 // Random event screen with choices - Revamped with epic animations!
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { motion, AnimatePresence } from 'framer-motion';
 import { teamState } from '../recoil/atoms/team';
 import { inventoryState, currencyState } from '../recoil/atoms/inventory';
-import { highlightedStatState } from '../recoil/atoms/highlight';
 import { floorState } from '../recoil/atoms/floor';
-import { relicsState } from '../recoil/atoms/relics';
 import { Button, Card } from '../components/ui';
 import PokemonCard from '../components/PokemonCard';
-import { RelicIcon } from '../components/RelicsPanel';
+import { RelicIcon } from '../components/panels/RelicsPanel';
 import { getChoiceEvent, canAffordChoice, processChoiceOutcome } from '../utils/events';
-import { getRandomPokemon } from '../utils/getRandomPokemon';
-import { getRandomRelic, RELIC_TIERS } from '../utils/relics';
-import { getItemById } from '../utils/items';
 import { useAudio } from '../hooks/useAudio';
 import { useOutcomeProcessor } from '../hooks/core/useOutcomeProcessor';
 import { useTemporaryState } from '../hooks/ui/useTemporaryState';
-import { discoverRelic } from '../utils/metaProgression';
 
 // Particle effect component for ambient atmosphere
 function ParticleField({ color = '#fbbf24', count = 20 }) {
