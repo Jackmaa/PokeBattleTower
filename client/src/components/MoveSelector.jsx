@@ -78,7 +78,7 @@ export default function MoveSelector({ moves, onSelectMove, disabled = false, en
                   {...getItemProps(index)}
                   onClick={() => !isOutOfPP && !disabled && onSelectMove(move, index)}
                   disabled={isOutOfPP || disabled}
-                  className={`relative p-4 rounded-lg border-2 transition-all duration-200 ${
+                  className={`relative w-full p-4 rounded-lg border-2 transition-all duration-200 ${
                     isOutOfPP || disabled
                       ? "opacity-50 cursor-not-allowed bg-gray-700/30"
                       : "hover:scale-105 cursor-pointer"

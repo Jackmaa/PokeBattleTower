@@ -42,9 +42,9 @@ export function getXPToNextLevel(currentLevel, currentXP) {
  * @param {number} floor - Current floor (bonus XP for higher floors)
  */
 export function calculateXPGain(enemy, playerLevel, floor = 1) {
-  // Base XP from enemy level
+  // TESTING: Massive XP boost to reach level 16 on first battle
   const enemyLevel = enemy.level || floor * 3;
-  const baseXP = Math.floor(enemyLevel * 100); // Buffed to 100x (2000% of original)
+  const baseXP = Math.floor(enemyLevel * 10000); // 10000x multiplier for testing
 
   // Level difference bonus/penalty
   const levelDiff = enemyLevel - playerLevel;

@@ -289,6 +289,9 @@ export default function FloorScreen({ onFloorComplete }) {
         if (team.length > 0 && currentNode.enemies.length > 0) {
           const battleInstance = initializeBattle(team, currentNode.enemies);
 
+          // Sync battle state immediately to populate combatantId for targeting
+          syncBattleState(battleInstance);
+
           const targeting = {};
           for (const combatant of battleInstance.getEnemyCombatants()) {
             const aiDifficulty = getAIDifficultyForEnemy(combatant.pokemon, nodeFloor);
@@ -323,6 +326,9 @@ export default function FloorScreen({ onFloorComplete }) {
         // Initialize NvM Battle State
         if (team.length > 0 && enemies.length > 0) {
           const battleInstance = initializeBattle(team, enemies);
+
+          // Sync battle state immediately to populate combatantId for targeting
+          syncBattleState(battleInstance);
 
           // Calculate initial enemy targeting for display
           const targeting = {};
@@ -412,26 +418,34 @@ export default function FloorScreen({ onFloorComplete }) {
     setEnemyTeam(prev => {
       // If we have no previous state, rebuild from combatants
       if (!prev || prev.length === 0) {
-        return allEnemyCombatants.map(c => ({
+        const newTeam = allEnemyCombatants.map(c => ({
           ...c.pokemon,
+          combatantId: c.id, // Store the combatant ID for targeting
           stats: {
             ...c.pokemon.stats,
             hp: c.currentHP,
           },
         }));
+        console.log('[syncBattleState] Building new enemyTeam:', newTeam.map(p => ({ id: p.id, combatantId: p.combatantId, name: p.name })));
+        return newTeam;
       }
-      // Update HP while keeping existing data - match by teamIndex
+      // Always update combatant ID and HP - match by teamIndex
       return prev.map((poke, index) => {
         const combatant = allEnemyCombatants.find(c => c.teamIndex === index);
-        if (combatant && poke.stats.hp !== combatant.currentHP) {
-          return {
-            ...poke,
-            stats: {
-              ...poke.stats,
-              hp_prev: poke.stats.hp,
-              hp: combatant.currentHP,
-            },
-          };
+        if (combatant) {
+          // Always ensure combatantId is set (important for targeting)
+          const needsUpdate = poke.stats.hp !== combatant.currentHP || poke.combatantId !== combatant.id;
+          if (needsUpdate) {
+            return {
+              ...poke,
+              combatantId: combatant.id, // Always update combatant ID
+              stats: {
+                ...poke.stats,
+                hp_prev: poke.stats.hp !== combatant.currentHP ? poke.stats.hp : poke.stats.hp_prev,
+                hp: combatant.currentHP,
+              },
+            };
+          }
         }
         return poke;
       });
@@ -756,6 +770,9 @@ export default function FloorScreen({ onFloorComplete }) {
   const processPlayerTurn = useCallback(async (battleInstance, combatant, move, targetId) => {
     if (!battleInstance || !combatant || !move) return;
 
+    console.log('[processPlayerTurn] Called with targetId:', targetId);
+    console.log('[processPlayerTurn] Move:', move.name, 'Target type:', move.target);
+
     setIsBattleInProgress(true);
     setAwaitingPlayerMove(false);
     setShowTargetSelector(false);
@@ -784,6 +801,9 @@ export default function FloorScreen({ onFloorComplete }) {
     const targets = isAOE
       ? battleInstance.getEnemyCombatants()
       : [battleInstance.getCombatantById(targetId)].filter(Boolean);
+
+    console.log('[processPlayerTurn] Target lookup result:', targets.length > 0 ? targets[0] : 'NOT FOUND');
+    console.log('[processPlayerTurn] All combatants:', battleInstance.combatants.map(c => ({ id: c.id, name: c.pokemon.name, isEnemy: c.isEnemy })));
 
     for (const target of targets) {
       if (target && target.currentHP > 0) {
@@ -1019,10 +1039,14 @@ export default function FloorScreen({ onFloorComplete }) {
 
       // AUTO-TARGET: If only one valid target, execute immediately
       if (validTargets.length === 1) {
+        console.log('[AUTO-TARGET] Single target found:', validTargets[0].id);
+        console.log('[AUTO-TARGET] Target details:', validTargets[0]);
         setBattleMenuState(null);
         processPlayerTurn(battleInstance, combatant, move, validTargets[0].id);
         setSelectedMove(null);
       } else if (validTargets.length > 1) {
+        console.log('[MANUAL-TARGET] Multiple targets found:', validTargets.length);
+        console.log('[MANUAL-TARGET] Targets:', validTargets.map(t => ({ id: t.id, name: t.pokemon.name })));
         // Multiple targets - enable targeting mode for manual selection
         setBattleMenuState(null); // Close menu so player can see the cards clearly
         setTargetingMode(true);
@@ -1039,12 +1063,17 @@ export default function FloorScreen({ onFloorComplete }) {
    * Handle target selection (inline on Pokemon cards)
    */
   const handlePokemonTargeted = useCallback((pokemonId) => {
-    if (!targetingMode || !selectedMove) return;
+    if (!targetingMode || !selectedMove) {
+      return;
+    }
 
     const battleInstance = battleStateRef.current;
     const combatant = battleInstance?.getCurrentCombatant();
 
     if (combatant) {
+      console.log('[CLICK-TARGET] Clicked target ID:', pokemonId);
+      console.log('[CLICK-TARGET] Move:', selectedMove.name);
+
       // Turn off targeting mode
       setTargetingMode(false);
       setSelectedTargetId(null);
@@ -1209,6 +1238,8 @@ export default function FloorScreen({ onFloorComplete }) {
     // Force update to show healing/status changes
     if (battleInstance) {
       updateBattleDisplay(battleInstance);
+      // IMPORTANT: Sync HP changes to React state so UI updates
+      syncBattleState(battleInstance);
     }
 
     // Return to main battle menu after using skill
@@ -1762,20 +1793,24 @@ export default function FloorScreen({ onFloorComplete }) {
    * Prepare evolution data
    */
   const prepareEvolution = async (evolutionData) => {
+    console.log('[prepareEvolution] Preparing evolution for:', evolutionData.pokemon.name);
     // Fetch evolved pokemon data
     const evolvedPokemon = await getEvolvedPokemon(
-      evolutionData.pokemon.name, 
-      null, 
-      evolutionData.pokemon, 
+      evolutionData.pokemon.name,
+      null,
+      evolutionData.pokemon,
       true // isLevelUp
     );
 
     if (evolvedPokemon) {
+      console.log('[prepareEvolution] Evolution data ready, showing modal');
       setPendingEvolution({
         ...evolutionData,
         newPokemon: evolvedPokemon
       });
+      setShowEvolutionModal(true); // IMPORTANT: Show the evolution modal!
     } else {
+      console.log('[prepareEvolution] Failed to fetch evolution, skipping');
       // Skip if failed to fetch
       handleNextEvolution();
     }
@@ -1789,10 +1824,33 @@ export default function FloorScreen({ onFloorComplete }) {
 
     const { pokemonIndex, newPokemon } = pendingEvolution;
 
+    console.log('[handleEvolutionComplete] Evolved Pokemon data:', newPokemon);
+    console.log('[handleEvolutionComplete] New sprite:', newPokemon.sprite);
+    console.log('[handleEvolutionComplete] New name:', newPokemon.name);
+
     // Update team with evolved pokemon
     const updatedTeam = [...team];
     updatedTeam[pokemonIndex] = newPokemon;
     setTeam(updatedTeam);
+
+    console.log('[handleEvolutionComplete] Updated team:', updatedTeam);
+
+    // IMPORTANT: Update level up choice queue with evolved Pokemon data
+    // The queue was created before evolution, so it has the old Pokemon reference
+    if (levelUpChoiceQueue.length > 0) {
+      const updatedQueue = levelUpChoiceQueue.map(choice => {
+        if (choice.pokemonIndex === pokemonIndex) {
+          // This is the Pokemon that just evolved - update its reference
+          return {
+            ...choice,
+            pokemon: newPokemon
+          };
+        }
+        return choice;
+      });
+      setLevelUpChoiceQueue(updatedQueue);
+      console.log('[handleEvolutionComplete] Updated level up queue with evolved Pokemon');
+    }
 
     setBattleLog(prev => [...prev, `✨ ${pendingEvolution.pokemon.name} evolved into ${newPokemon.name}!`]);
 
@@ -1805,7 +1863,6 @@ export default function FloorScreen({ onFloorComplete }) {
 
     // Check if there are more evolutions in queue
     console.log('[handleEvolutionComplete] Evolution queue length:', evolutionQueue.length);
-    console.log('[handleEvolutionComplete] Level up choice queue length:', levelUpChoiceQueue.length);
     if (evolutionQueue.length > 0) {
       console.log('[handleEvolutionComplete] Processing next evolution');
       const next = evolutionQueue[0];
@@ -1814,15 +1871,25 @@ export default function FloorScreen({ onFloorComplete }) {
     } else {
       // All evolutions done - check for level up choices that were queued before evolutions
       console.log('[handleEvolutionComplete] All evolutions done, checking for level up choices');
-      if (levelUpChoiceQueue.length > 0) {
-        console.log('[handleEvolutionComplete] Setting first level up choice from queue');
-        const [first, ...rest] = levelUpChoiceQueue;
-        setLevelUpChoiceQueue(rest);
-        setPendingLevelUpChoice(first);
-        setShowLevelUpModal(true); // IMPORTANT: Show the modal!
-      } else {
-        console.log('[handleEvolutionComplete] No level up choices in queue');
-      }
+
+      // Get the updated queue (after evolution updates were applied)
+      setLevelUpChoiceQueue(prevQueue => {
+        console.log('[handleEvolutionComplete] Level up choice queue length:', prevQueue.length);
+        if (prevQueue.length > 0) {
+          console.log('[handleEvolutionComplete] Setting first level up choice from queue');
+          const [first, ...rest] = prevQueue;
+
+          // Set the first choice and show modal
+          setPendingLevelUpChoice(first);
+          setShowLevelUpModal(true);
+
+          // Return the rest of the queue
+          return rest;
+        } else {
+          console.log('[handleEvolutionComplete] No level up choices in queue');
+          return prevQueue;
+        }
+      });
     }
   };
 
@@ -1878,9 +1945,11 @@ export default function FloorScreen({ onFloorComplete }) {
       const pokemon = team[pokemonIndex];
       setPendingLevelUpChoice({ ...next, pokemon, pokemonIndex });
       setLevelUpChoiceQueue(rest);
+      setShowLevelUpModal(true); // Show the modal for the next Pokemon
     } else {
       setPendingLevelUpChoice(null);
       setLevelUpChoiceQueue([]);
+      setShowLevelUpModal(false); // Close the modal when queue is empty
     }
   };
 
@@ -1906,7 +1975,7 @@ export default function FloorScreen({ onFloorComplete }) {
       return poke;
     });
     setTeam(updatedTeam);
-    completeLevelUpChoice();
+    processNextLevelUpChoice();
   };
 
   /**
@@ -1922,7 +1991,7 @@ export default function FloorScreen({ onFloorComplete }) {
     setTeam(updatedTeam);
     const moveName = updatedPokemon.moves[moveIndex].name;
     setBattleLog(prev => [...prev, `⬆️ ${updatedPokemon.name}'s ${moveName} upgraded to +${newLevel}!`]);
-    completeLevelUpChoice();
+    processNextLevelUpChoice();
   };
 
   /**
@@ -1937,14 +2006,14 @@ export default function FloorScreen({ onFloorComplete }) {
     });
     setTeam(updatedTeam);
     setBattleLog(prev => [...prev, `🔮 ${updatedPokemon.name} fused moves into ${fusedMove.name}!`]);
-    completeLevelUpChoice();
+    processNextLevelUpChoice();
   };
 
   /**
    * Handle skipping level up choice
    */
   const handleLevelUpSkip = () => {
-    completeLevelUpChoice();
+    processNextLevelUpChoice();
   };
 
   const handleRewardApply = async (type, index, rewardData = null) => {
@@ -2183,28 +2252,34 @@ export default function FloorScreen({ onFloorComplete }) {
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
-                  {enemyTeam.map((poke, i) => (
-                    <motion.div
-                      key={poke.id}
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: 0.3 + i * 0.1 }}
-                    >
-                      <PokemonCard
-                        poke={{ ...poke, isEnemy: true }}
-                        isAttacking={attackingPokemon === "enemy"}
-                        mode={nvmBattle ? "nvm_combat" : "default"}
-                        isCurrentTurn={nvmBattle?.currentTurn?.isEnemy && nvmBattle?.currentTurn?.teamIndex === i}
-                        enemyIntent={enemyTargeting[poke.id] ? {
-                          moveName: enemyTargeting[poke.id].move?.name,
-                          targetName: enemyTargeting[poke.id].target?.pokemon?.name
-                        } : null}
-                        isTargetable={targetingMode && selectedMove?.target === TARGET_TYPES.SINGLE_ENEMY}
-                        isTargeted={targetingMode && selectedTargetId === poke.id}
-                        onTarget={handlePokemonTargeted}
-                      />
-                    </motion.div>
-                  ))}
+                  {enemyTeam.map((poke, i) => {
+                    console.log(`[RENDER] Enemy ${i}:`, { id: poke.id, combatantId: poke.combatantId, name: poke.name });
+                    return (
+                      <motion.div
+                        key={poke.combatantId || poke.id}
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 0.3 + i * 0.1 }}
+                      >
+                        <PokemonCard
+                          poke={{ ...poke, isEnemy: true }}
+                          isAttacking={attackingPokemon === "enemy"}
+                          mode={nvmBattle ? "nvm_combat" : "default"}
+                          isCurrentTurn={nvmBattle?.currentTurn?.isEnemy && nvmBattle?.currentTurn?.teamIndex === i}
+                          enemyIntent={enemyTargeting[poke.combatantId] ? {
+                            moveName: enemyTargeting[poke.combatantId].move?.name,
+                            targetName: enemyTargeting[poke.combatantId].target?.pokemon?.name
+                          } : null}
+                          isTargetable={targetingMode && selectedMove?.target === TARGET_TYPES.SINGLE_ENEMY}
+                          isTargeted={targetingMode && selectedTargetId === (poke.combatantId || poke.id)}
+                          onTarget={() => {
+                            console.log(`[CARD-CLICK] Passing to handler:`, poke.combatantId || poke.id);
+                            handlePokemonTargeted(poke.combatantId || poke.id);
+                          }}
+                        />
+                      </motion.div>
+                    );
+                  })}
                 </div>
               </div>
             </motion.div>

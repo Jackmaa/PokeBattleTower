@@ -100,7 +100,7 @@ export default function SkillSelector({
                 {...getItemProps(index)}
                 onClick={() => !isDisabled && onUseSkill(skillId)}
                 disabled={isDisabled}
-                className={`relative p-4 rounded-lg border-2 transition-all duration-200 ${
+                className={`relative w-full p-4 rounded-lg border-2 transition-all duration-200 ${
                   isDisabled
                     ? "opacity-50 cursor-not-allowed bg-gray-700/30"
                     : "hover:scale-105 cursor-pointer"
